@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Herencia sobre el formulario de diarios de Odoo 18.
+        Se inserta DESPUÉS del group "bank_account_number" (que contiene bank_account_id).
+        Solo aparece cuando el diario es de tipo bancario (type = 'bank').
+    -->
+    <record id="account_journal_form_inherit_h2h" model="ir.ui.view">
+        <field name="name">account.journal.form.inherit.h2h</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//group[@name='bank_account_number']" position="after">
+                <group name="hsbc_h2h_config"
+                       string="Configuración HSBC H2H"
+                       invisible="type != 'bank'">
+
+                    <field name="is_h2h_enabled" widget="boolean_toggle"/>
+
+                    <field name="hsbc_client_id"
+                           invisible="not is_h2h_enabled"
+                           placeholder="Ej. PC000032364"
+                           required="is_h2h_enabled"/>
+
+                    <field name="hsbc_bic"
+                           invisible="not is_h2h_enabled"
+                           placeholder="Ej. BIMEMXMM"/>
+
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

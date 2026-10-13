@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light"><head><meta charset="UTF-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Odoo · Pago a proveedor HSBC SPEI (prototipo)</title>
+<style>
+:root{--bg:#f4f5f7;--pn:#fff;--bd:#d8dadd;--tx:#212529;--mu:#6c757d;--pu:#714b67;--pf:#5b3758;--te:#017e84;--gr:#28a745;--rd:#dc3545;--am:#fff3cd;--hd:#f3f4f6;--tl:#e0f2f3}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 Roboto,-apple-system,"Segoe UI",Arial,sans-serif}
+.top{display:flex;gap:18px;align-items:center;background:var(--pn);border-bottom:1px solid var(--bd);padding:10px 18px;flex-wrap:wrap}
+.top b{color:var(--pu)}.top .sp{flex:1}.top span{color:var(--mu)}
+.wrap{max-width:1050px;margin:0 auto;padding:12px 16px 40px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 0}
+button{font:inherit;font-weight:500;padding:6px 12px;border-radius:4px;border:1px solid var(--bd);background:var(--hd);color:var(--tx);cursor:pointer}
+button.p{background:var(--pu);border-color:var(--pu);color:#fff}button.p:hover{background:var(--pf)}
+button.g{background:var(--gr);border-color:var(--gr);color:#fff}button.r{background:var(--rd);border-color:var(--rd);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+.sb{display:flex;margin-left:auto}.sb i{font-style:normal;padding:6px 14px;border:1px solid var(--bd);color:var(--mu);background:var(--pn)}
+.sb i.on{color:var(--te);border-color:var(--te);font-weight:600;background:var(--tl)}
+.sheet{position:relative;overflow:hidden;background:var(--pn);border:1px solid var(--bd);border-radius:4px;padding:20px 24px;margin-top:6px}
+h1{margin:2px 0 18px;font-size:30px;font-weight:500}
+.mu{color:var(--mu)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.f{display:flex;gap:10px;padding:6px 0;align-items:baseline}.f>label{flex:0 0 130px;font-weight:500}
+.f>div,.f>input,.f>select{flex:1;min-width:0}
+input,select{font:inherit;color:var(--tx);background:transparent;border:0;border-bottom:1px solid var(--bd);padding:3px 2px}
+input:focus,select:focus{outline:0;border-color:var(--te)}select option{background:var(--pn)}
+.lnk{color:var(--te)}
+.rib{position:absolute;top:26px;right:-46px;width:190px;text-align:center;transform:rotate(45deg);color:#fff;font-size:11px;font-weight:700;padding:5px 0;letter-spacing:.4px}
+.rib.gr{background:var(--gr)}.rib.rd{background:var(--rd)}
+.note{margin-top:14px;padding:9px 12px;border-radius:4px;background:var(--tl);color:var(--tx);font-size:13px}
+.note.am{background:var(--am)}.note.er{background:#fbe9eb;color:#a71d2a}
+.sm{border:1px solid var(--bd);border-radius:4px;background:var(--pn);padding:4px 16px;text-align:center;line-height:1.2;margin:0 auto}
+.sm b{display:block;color:var(--te)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto;z-index:9}
+.md{background:var(--pn);border-radius:4px;width:100%;max-width:820px;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.md>h2{margin:0;padding:14px 20px;font-size:18px;font-weight:500;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between}
+.mb{padding:14px 20px}.mf{padding:12px 20px;border-top:1px solid var(--bd);display:flex;gap:8px}
+h3{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--pu)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}th{color:var(--mu);font-weight:500;background:var(--hd)}
+code,.tag{font:11px ui-monospace,Menlo,monospace;color:var(--mu)}
+.org{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:var(--tl);color:var(--te);white-space:nowrap}
+.org.c{background:var(--am);color:#8a6404}.org.n{background:var(--hd);color:var(--mu)}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--bd);margin:20px 0 12px}
+.tabs a{padding:8px 2px;cursor:pointer;color:var(--mu)}.tabs a.on{color:var(--tx);border-bottom:2px solid var(--te);font-weight:600}
+.st{display:flex;margin:14px 0}.stg{flex:1;text-align:center;position:relative;font-size:11px;color:var(--mu)}
+.stg u{display:flex;width:26px;height:26px;margin:0 auto 6px;border-radius:50%;border:2px solid var(--bd);align-items:center;justify-content:center;background:var(--pn);position:relative;z-index:2;text-decoration:none;font-weight:700}
+.stg:not(:first-child):before{content:"";position:absolute;top:12px;left:-50%;width:100%;height:2px;background:var(--bd)}
+.stg.d u{background:var(--te);border-color:var(--te);color:#fff}.stg.d:not(:first-child):before{background:var(--te)}
+.stg.c u{border-color:var(--te);color:var(--te)}.stg.d,.stg.c{color:var(--tx)}.stg.x u{background:var(--rd);border-color:var(--rd);color:#fff}
+pre{background:var(--hd);border:1px solid var(--bd);border-radius:4px;padding:12px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,monospace;max-height:420px;margin:0}
+.ov input{width:100%}
+.ch{background:var(--pu);color:#fff;border-radius:3px;padding:2px 8px;font-size:12px}tr.cl{cursor:pointer}tr.cl:hover td{background:var(--hd)}
+.tc{display:flex;gap:12px;align-items:baseline;padding:10px 12px;border:1px solid var(--bd);border-radius:4px;margin-bottom:8px;cursor:pointer}.tc:hover{border-color:var(--te);background:var(--tl)}.tc b{flex:0 0 110px;color:var(--pu)}
+.lg{display:inline-block;width:22px;height:22px;border-radius:5px;background:linear-gradient(90deg,var(--pu) 50%,var(--te) 50%);vertical-align:middle;margin-right:8px}
+.top b{color:var(--tx)}.top a{color:var(--tx)}
+.bc{padding:14px 0 12px}.bc a{color:var(--te);cursor:pointer}.bc b{font-weight:500}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 26px}
+.pl{border-radius:999px;padding:6px 16px;font-size:13px;font-weight:400;background:var(--hd)}
+.pl.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.k{color:var(--mu);font-size:13px}.v{font-size:14px;margin:2px 0 16px}
+.og{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+@media(max-width:700px){.og{grid-template-columns:1fr}}
+hr{border:0;border-top:1px solid var(--bd);margin:18px 0}
+.inf{display:flex;gap:10px;align-items:center;margin:22px 0;padding:14px;background:#f8f9fa;border:1px solid var(--bd);border-radius:4px;font-size:13px}
+.inf i{flex:0 0 14px;height:14px;border:1.5px solid var(--mu);border-radius:50%;font:700 9px/11px sans-serif;text-align:center;color:var(--mu)}
+.in{border:1px solid var(--bd);border-radius:4px;padding:7px 10px;width:100%;background:var(--pn)}
+.big button{padding:10px 14px}
+</style></head><body>
+<div class="top"><b><i class="lg"></i>Compras</b><a>Órdenes</a><a>Productos</a><a>Reportes</a><a>Configuración</a><span class="sp"></span><span>GRUPO INDUSTRIAL Y COMERCIAL</span></div>
+<div class="wrap" id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const fmt=n=>Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clabe=(b,p,a)=>{const s=b+p+a;let t=0;[...s].forEach((d,i)=>t+=(d*[3,7,1][i%3])%10);return s+((10-t%10)%10)};
+const okClabe=c=>/^\d{18}$/.test(c)&&clabe(c.slice(0,3),c.slice(3,6),c.slice(6,17))===c;
+const BANKS={'021':'HSBC','012':'BBVA','014':'Santander'};
+const P=[
+ {n:'JUAN PEREZ',rfc:'PEPJ800101AB1',st:'Calle Norte 45',cp:'01000',ci:'CDMX',cl:clabe('021','180','00012345678')},
+ {n:'DISTRIBUIDORA RIO BRAVO SA DE CV',rfc:'DRB910522L29',st:'Blvd. Industrial 900',cp:'64000',ci:'Monterrey',cl:clabe('012','580','00098765432')},
+ {n:'MAQUINARIA NORTE SA DE CV',rfc:'MNO770108H45',st:'Av. Reforma 210',cp:'44100',ci:'Guadalajara',cl:clabe('014','320','00055512345')},
+ {n:'FME TRUCKING INC',rfc:'XEXX010101000',st:'Av. Vallarta 3200',cp:'45050',ci:'Zapopan',cl:clabe('021','180','00000000042'),h:'6098765432',sw:'BIMEMXMM'},
+ {n:'COMISION FEDERAL DE ELECTRICIDAD',rfc:'CFE370814QI0',st:'Av. Reforma 164',cp:'06600',ci:'CDMX',cl:clabe('012','180','00000000001')},
+ {n:'SERVICIO DE ADMINISTRACION TRIBUTARIA',rfc:'SAT970701NN3',st:'Av. Hidalgo 77',cp:'06300',ci:'CDMX',cl:clabe('012','180','00000000002')}];
+P.forEach((p,i)=>{p.sw=p.sw||['BIMEMXMM','BCMRMXMM','BMSXMXMM'][i]});P[0].h='6012345678';
+const T={
+'HSBC SPEI (H2H)':{k:'SPEI',cur:'MXN',acct:'clabe',x:[]},
+'HSBC SPID (H2H)':{k:'SPID',cur:'USD',acct:'clabe',x:[]},
+'HSBC OPIS (H2H)':{k:'OPIS',cur:'USD',acct:'swift',x:[['pais','País del banco beneficiario','CdtrAgt/PstlAdr/Ctry'],['motivo','Motivo del pago','RmtInf']]},
+'HSBC B2B (HSBC-HSBC)':{k:'B2B',cur:null,acct:'hsbc',x:[]},
+'HSBC TEF (H2H)':{k:'TEF',cur:'MXN',acct:'clabe',x:[]},
+'HSBC ACH (Nómina HSBC)':{k:'ACH',cur:'MXN',acct:'emps',nom:1,x:[]},
+'HSBC Pago de servicios':{k:'SERV',cur:'MXN',acct:'conv',x:[['conv','Convenio / CIE','CdtrAcct/Id'],['refsv','Referencia del servicio','RmtInf']]},
+'HSBC Pago de derechos':{k:'DER',cur:'MXN',acct:'conv',x:[['conv','Convenio / Dependencia','CdtrAcct/Id'],['lc','Línea de captura','RmtInf']]}};
+const EMP=[{id:'E-101',n:'ANA LOPEZ MARTINEZ',acc:'6011000101',amt:8450.5},{id:'E-102',n:'CARLOS RUIZ SOTO',acc:'6011000102',amt:9120},{id:'E-103',n:'MARIA FERNANDA DIAZ',acc:'6011000103',amt:7800.25},{id:'E-104',n:'LUIS HERNANDEZ PONCE',acc:'6011000104',amt:11300},{id:'E-105',n:'SOFIA TORRES VEGA',acc:'6011000105',amt:6950},{id:'E-106',n:'JORGE MENDOZA RIOS',acc:'6011000106',amt:8200}];
+const TD={'HSBC SPEI (H2H)':'Transferencia en MXN a una CLABE','HSBC SPID (H2H)':'Transferencia en USD a una cuenta en México','HSBC OPIS (H2H)':'Pago internacional (SWIFT)','HSBC B2B (HSBC-HSBC)':'Traspaso entre cuentas HSBC','HSBC TEF (H2H)':'Transferencia electrónica de fondos','HSBC ACH (Nómina HSBC)':'Nómina: pago a varios empleados','HSBC Pago de servicios':'Servicio con convenio / CIE','HSBC Pago de derechos':'Pago de derechos con línea de captura'};
+const selE=()=>EMP.filter(x=>x.id in S.emp).map(x=>({...x,amt:S.emp[x.id]}));
+const recalc=()=>{S.monto=selE().reduce((a,x)=>a+x.amt,0)};
+function togE(id){if(id in S.emp)delete S.emp[id];else S.emp[id]=EMP.find(x=>x.id===id).amt;recalc();render()}
+function selAll(){if(EMP.every(x=>x.id in S.emp))S.emp={};else EMP.forEach(x=>{if(!(x.id in S.emp))S.emp[x.id]=x.amt});recalc();render()}
+function setE(id,v){S.emp[id]=+v||0;recalc();render()}
+const J={HSBC:{acc:'4043004821',bic:'BIMEMXMM',id:'PC000032364',m:['Manual',...Object.keys(T)]},BBVA:{acc:'0123456789',m:['Manual']},Santander:{acc:'9876543210',m:['Manual']}};
+const CO={n:'GRUPO INDUSTRIAL Y COMERCIAL',st:'Av Principal 123',cp:'81200',ci:'Los Mochis'};
+const today=new Date().toISOString().slice(0,10);
+const dm=d=>d.split('-').reverse().join('/');
+const hm=()=>new Date().toLocaleTimeString('es-MX');
+const S={prov:null,ref:'',monto:1500,cur:'MXN',ctx:'Proveedores',started:false,posted:false,pay:null,view:'list',modal:null,tab:'seg',tm:false,tipo:'HSBC SPEI (H2H)',ex:{},emp:{}};
+const spei=p=>p&&!!T[p.method];
+
+function buildXml(p){const v=S.prov||{},j=J[p.journal],t=T[p.method],e=p.ex||{},f=n=>Number(n).toFixed(2),sw=t.acct==='swift';
+ const tx=t.nom?p.emps.map(x=>({r:p.ref+'-'+x.id,a:x.amt,n:x.n,adr:'',acc:x.acc,ag:'<ClrSysMmbId><MmbId>021</MmbId></ClrSysMmbId>',c:'MX',rm:'No. de empleado: '+x.id}))
+ :[{r:p.ref,a:p.monto,n:v.n,adr:`<StrtNm>${v.st}</StrtNm><PstCd>${v.cp}</PstCd><TwnNm>${v.ci}</TwnNm><Ctry>MX</Ctry>`,acc:t.acct==='hsbc'?v.h:t.acct==='conv'?e.conv:v.cl,ag:sw?`<BIC>${v.sw}</BIC>`:`<ClrSysMmbId><MmbId>${t.acct==='hsbc'?'021':v.cl.slice(0,3)}</MmbId></ClrSysMmbId>`,c:sw?e.pais:'MX',rm:t.x.map(([k,l])=>l+': '+(e[k]||'')).join(' | ')}];
+ const tot=tx.reduce((a,x)=>a+Number(x.a),0);
+return `<?xml version="1.0" encoding="UTF-8" ?>
+${t.k==='SPEI'?'':`<!-- Ilustrativo: el XML real de ${t.k} lo produce su generador -->\n`}<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>Referencia-3-${today.replace(/-/g,'')}</MsgId>
+      <CreDtTm>${today}T${hm()}</CreDtTm>
+      <NbOfTxs>${tx.length}</NbOfTxs>
+      <CtrlSum>${f(tot)}</CtrlSum>
+      <InitgPty><Id><OrgId><Othr><Id>${j.id}</Id></Othr></OrgId></Id></InitgPty>
+    </GrpHdr>
+    <PmtInf>
+      <PmtInfId>PAYMENT123</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      ${t.k==='SPEI'?'<PmtTpInf><SvcLvl><Cd>URGP</Cd></SvcLvl></PmtTpInf>':`<!-- PmtTpInf: lo define el generador ${t.k} -->`}
+      <ReqdExctnDt>${p.fecha}</ReqdExctnDt>
+      <Dbtr><Nm>${CO.n}</Nm><PstlAdr><StrtNm>${CO.st}</StrtNm><PstCd>${CO.cp}</PstCd><TwnNm>${CO.ci}</TwnNm><Ctry>MX</Ctry></PstlAdr></Dbtr>
+      <DbtrAcct><Id><Othr><Id>${j.acc}</Id></Othr></Id></DbtrAcct>
+      <DbtrAgt><FinInstnId><BIC>${j.bic}</BIC><PstlAdr><Ctry>MX</Ctry></PstlAdr></FinInstnId></DbtrAgt>
+${tx.map(x=>`      <CdtTrfTxInf>
+        <PmtId><InstrId>${esc(x.r)}</InstrId><EndToEndId>${esc(x.r)}</EndToEndId></PmtId>
+        <Amt><InstdAmt Ccy="${p.cur}">${f(x.a)}</InstdAmt></Amt>
+        <CdtrAgt><FinInstnId>${x.ag}<PstlAdr><Ctry>${esc(x.c||'')}</Ctry></PstlAdr></FinInstnId></CdtrAgt>
+        <Cdtr><Nm>${esc(x.n)}</Nm>${x.adr?`<PstlAdr>${x.adr}</PstlAdr>`:''}</Cdtr>
+        <CdtrAcct><Id><Othr><Id>${esc(x.acc||'')}</Id></Othr></Id></CdtrAcct>${x.rm?`\n        <RmtInf><Ustrd>${esc(x.rm)}</Ustrd></RmtInf>`:''}
+      </CdtTrfTxInf>`).join('\n')}
+    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>`}
+
+const sb=(a,b,c)=>`<div class="sb">${a.map((x,i)=>`<i class="${i===b?'on':''}">${x}</i>`).join('')}</div>`;
+function inv(){const p=S.prov,y=S.pay,t=T[S.tipo],nom=t.nom,lk=S.posted?'disabled':'';
+ const rib=y?(y.state==='Pagado'?['PAGADO','gr']:y.state==='Rechazado'?['PAGO RECHAZADO','rd']:['EN PROCESO DE PAGO','gr']):null;
+ const all=EMP.every(x=>x.id in S.emp);
+ const body=nom?`<div class="grid"><div>
+   <div class="f"><label>Concepto</label><input ${lk} value="${esc(S.ref)}" oninput="S.ref=this.value"></div>
+   <div class="f"><label>Diario</label><div>Nómina HSBC</div></div>
+  </div><div>
+   <div class="f"><label>Fecha de pago</label><div>${dm(today)}</div></div>
+   <div class="f"><label>Empleados</label><div>${selE().length} de ${EMP.length} seleccionados</div></div>
+   <div class="f"><label>Total a pagar</label><div><b>$ ${fmt(S.monto)} MXN</b></div></div>
+  </div></div>
+  <table style="margin-top:16px"><tr><th><input type="checkbox" ${all?'checked':''} ${lk} onchange="selAll()"></th><th>No.</th><th>Empleado</th><th>Cuenta HSBC</th><th>Neto a pagar</th></tr>
+  ${EMP.map(x=>{const on=x.id in S.emp;return `<tr><td><input type="checkbox" ${on?'checked':''} ${lk} onchange="togE('${x.id}')"></td><td>${x.id}</td><td>${x.n}</td><td>${x.acc}</td><td><input type="number" step="0.01" style="width:120px" value="${on?S.emp[x.id]:x.amt}" ${on&&!lk?'':'disabled'} onchange="setE('${x.id}',this.value)"></td></tr>`}).join('')}</table>
+  <div class="note">Marca a los empleados que entran en este pago. Cada uno será una instrucción dentro del mismo XML.</div>`
+ :`<div class="grid"><div>
+   <div class="f"><label>${L()}</label><select ${lk} onchange="setProv(this.value)"><option value="">Buscar nombre o RFC…</option>${P.map((x,i)=>`<option value="${i}" ${p===x?'selected':''}>${x.n}</option>`).join('')}</select></div>
+   <div class="f"><label>Dirección</label><div class="lnk">${p?`${p.st}<br>${p.cp} ${p.ci}, México`:'<span class="mu">—</span>'}</div></div>
+   <div class="f"><label>RFC</label><div>${p?p.rfc:'—'}</div></div>
+   <div class="f"><label>Cuenta bancaria</label><div class="lnk">${p?`${p.cl} · ${BANKS[p.cl.slice(0,3)]}`:'—'}</div></div>
+  </div><div>
+   <div class="f"><label>Fecha de factura</label><div>${dm(today)}</div></div>
+   <div class="f"><label>Fecha de vencimiento</label><div>${dm(today)}</div></div>
+   <div class="f"><label>Ref. de proveedor</label><input value="${esc(S.ref)}" ${lk} oninput="S.ref=this.value" placeholder="Ej. FAC-2231"></div>
+   <div class="f"><label>Importe</label><input type="number" step="0.01" value="${S.monto}" ${lk} oninput="S.monto=+this.value"><select style="flex:0 0 72px" ${S.posted||t.cur?'disabled':''} onchange="S.cur=this.value"><option ${S.cur==='MXN'?'selected':''}>MXN</option><option ${S.cur==='USD'?'selected':''}>USD</option></select></div>
+   <div class="f"><label>Diario</label><div>Facturas de proveedores</div></div>
+  </div></div>
+  ${t.x.length?`<h3>Datos del pago ${t.k}</h3><div class="grid">${t.x.map(([k,l])=>`<div class="f"><label>${l}</label><input ${lk} value="${esc(S.ex[k]||'')}" oninput="S.ex['${k}']=this.value"></div>`).join('')}</div>`:''}
+  ${p?`<div class="note">✓ Al elegir el ${L().toLowerCase()}, Odoo ya trae su dirección, RFC y cuenta bancaria (ficha del contacto). Esos mismos datos alimentan el pago ${t.k}.</div>`:''}`;
+ return `<div class="bar"><button onclick="S.view='list';render()">← Facturas</button>
+  ${!S.posted?`<button class="p" onclick="confirmar()">Confirmar</button>`:`<button class="p" ${y?'disabled':''} onclick="abrirPagar()">Pagar</button><button ${y?'disabled':''} onclick="S.posted=false;render()">Restablecer a borrador</button>`}
+  ${y?`<div class="sm" style="margin:0 auto"><button style="border:0;background:none;padding:0;cursor:pointer" onclick="S.view='pay';render()"><b>1</b>Pagos</button></div>`:''}
+  ${sb(['Borrador','Registrado'],S.posted?1:0)}</div>
+ <div class="sheet">${rib?`<div class="rib ${rib[1]}">${rib[0]}</div>`:''}
+  <div class="mu">${nom?'Pago de nómina':'Factura de '+L().toLowerCase()} · <span class="org">${t.k}</span></div><h1>${S.posted?(nom?'NOM/2026/0007':'BILL/2026/00019'):'Borrador'}</h1>
+  ${body}
+ </div>`}
+
+function pagarModal(){const m=S.modal,j=J[m.journal],p=S.prov||{},t=T[m.method],h=!!t,nm=T[S.tipo].nom,cl=p.cl||'',e=m.ex||{},err=h?chk(m):'';
+ const A={clabe:['CLABE beneficiario',`${cl} ${okClabe(cl)?'✓ válida':'✗ inválida'}`,'CdtrAcct/Id','Cuenta del proveedor'],hsbc:['Cuenta HSBC beneficiario',p.h||'— sin registrar —','CdtrAcct/Id','Cuenta del proveedor'],swift:['Cuenta / IBAN · SWIFT',`${cl} · ${p.sw}`,'CdtrAcct/Id · CdtrAgt/BIC','Cuenta del proveedor']};
+ const R=(l,v,t,o,c)=>`<tr><td>${l}</td><td>${v}</td><td><code>${t}</code></td><td><span class="org ${c||''}">${o}</span></td></tr>`;
+ return `<div class="ov"><div class="md"><h2>Pagar <a style="cursor:pointer" onclick="S.modal=null;render()">✕</a></h2><div class="mb">
+ <div class="grid"><div>
+  <div class="f"><label>Diario (banco)</label><select onchange="S.modal.journal=this.value;S.modal.method=this.value==='HSBC'?S.tipo:'Manual';render()">${Object.keys(J).map(k=>`<option ${k===m.journal?'selected':''}>${k}</option>`).join('')}</select></div>
+  <div class="f"><label>Método de pago</label><select onchange="S.modal.method=this.value;render()">${(m.journal==='HSBC'?['Manual',S.tipo]:j.m).map(k=>`<option ${k===m.method?'selected':''}>${k}</option>`).join('')}</select></div>
+  <div class="f"><label>Cuenta bancaria receptora</label><div class="lnk">${nm?selE().length+' empleados (cuentas HSBC)':cl+' · '+BANKS[cl.slice(0,3)]}</div></div>
+ </div><div>
+  <div class="f"><label>Importe</label><div>$ ${fmt(S.monto)} ${S.cur}</div></div>
+  <div class="f"><label>Fecha de pago</label><input type="date" value="${m.fecha}" oninput="S.modal.fecha=this.value"></div>
+  <div class="f"><label>Memo</label><input value="${esc(m.memo)}" oninput="S.modal.memo=this.value"></div>
+ </div></div>
+ ${h?`<h3>Datos de la instrucción ${t.k} · HSBC H2H</h3>
+ ${err?`<div class="note er">${err}</div>`:''}
+ <div class="mu" style="font-size:12px;margin-bottom:6px">Esto es lo que pide el XML. "Capturar" = dato que Odoo no guarda hoy.</div>
+ <table><tr><th>Dato</th><th>Valor</th><th>Etiqueta XML</th><th>Origen</th></tr>
+ ${nm?R('Empleados',selE().length+' · total $'+fmt(S.monto),'NbOfTxs · CtrlSum','Nómina')+selE().map(x=>R(x.id+' · '+x.n,x.acc+' · $'+fmt(x.amt),'Cdtr/Nm · CdtrAcct','Empleado','n')).join(''):R('Beneficiario',p.n,'Cdtr/Nm','Proveedor')}
+ ${nm?'':R('Domicilio beneficiario',`${p.st}, ${p.cp} ${p.ci}`,'Cdtr/PstlAdr','Proveedor')}
+ ${!nm&&t.acct!=='conv'?R(...A[t.acct]):''}
+ ${t.acct==='clabe'?R('Banco beneficiario (clave)',`${cl.slice(0,3)} · ${BANKS[cl.slice(0,3)]}`,'CdtrAgt/MmbId','Derivado de la CLABE','n'):''}
+ ${t.x.map(([k,l,pa])=>R(l,`<input value="${esc(e[k]||'')}" onchange="S.modal.ex['${k}']=this.value;render()">`,pa,'Capturar','c')).join('')}
+ ${R('Importe / moneda',`${fmt(S.monto)} ${S.cur}`,'InstdAmt','Factura')}
+ ${R('Fecha de ejecución',dm(m.fecha),'ReqdExctnDt','Fecha de pago')}
+ ${R('Ordenante',CO.n,'Dbtr/Nm','Compañía')}
+ ${R('Cuenta ordenante',j.acc,'DbtrAcct/Id','Diario HSBC','c')}
+ ${R('BIC ordenante',j.bic,'DbtrAgt/BIC','Diario HSBC','c')}
+ ${R('ID cliente HSBC',j.id,'InitgPty/Id','Diario HSBC','c')}
+ ${R('Tipo de instrucción',t.k+(t.cur?' · '+t.cur:''),'PmtTpInf','Método de pago','c')}
+ ${R('Referencia',`<input value="${esc(m.ref)}" oninput="S.modal.ref=this.value">`,'InstrId / EndToEndId','Generado','n')}
+ </table>`:''}
+ </div><div class="mf"><button class="p" ${err?'disabled':''} onclick="crearPago()">Crear pago</button><button onclick="S.modal=null;render()">Descartar</button></div></div></div>`}
+
+const STG=['Pago creado','XML generado','Esperando confirmación de pagos','Enviado a HSBC','Resultado del banco'];
+function payV(){const y=S.pay,p=S.prov||{},h=spei(y),nm=(T[y.method]||{}).nom;
+ const st=y.state, sbI=st==='Rechazado'?['Borrador','Rechazado']:['Borrador','En proceso','Pagado'];
+ const idx=st==='Pagado'?2:st==='Rechazado'?1:1;
+ let btn='';
+ if(!h&&st==='En proceso')btn=`<button class="p" onclick="manualOk()">Validar</button>`;
+ if(h&&y.stage===2)btn=`<button class="p" onclick="paso(3,'Confirmado por pagos. Enviando XML por H2H a HSBC…')">Validar y enviar a HSBC</button>`;
+ if(h&&y.stage===3)btn=`<button class="g" onclick="resp(true)">Simular respuesta: aceptado</button><button class="r" onclick="resp(false)">Simular respuesta: rechazado</button>`;
+ return `<div class="bar"><button onclick="S.view='inv';render()">← Factura</button>${btn}${sb(sbI,st==='Pagado'?2:1)}</div>
+ <div class="sheet"><h1>${y.name}</h1><div class="grid"><div>
+  <div class="f"><label>Tipo de pago</label><div>Enviar</div></div>
+  <div class="f"><label>${nm?'Beneficiarios':L()}</label><div class="lnk">${nm?y.emps.length+' empleados':p.n}</div></div>
+  <div class="f"><label>Importe</label><div>$ ${fmt(y.monto)} ${y.cur}</div></div>
+  <div class="f"><label>Fecha</label><div>${dm(y.fecha)}</div></div>
+  <div class="f"><label>Memo</label><div>${esc(y.memo)}</div></div>
+ </div><div>
+  <div class="f"><label>Diario</label><div class="lnk">${y.journal}</div></div>
+  <div class="f"><label>Método de pago</label><div>${y.method}</div></div>
+  <div class="f"><label>Cuenta de la empresa</label><div>${J[y.journal].acc} - ${y.journal}</div></div>
+  <div class="f"><label>${nm?'Cuentas':'Cuenta del proveedor'}</label><div>${nm?'HSBC de '+y.emps.length+' empleados':p.cl}</div></div>
+ </div></div>
+ ${nm?`<table style="margin-top:14px"><tr><th>No.</th><th>Empleado</th><th>Cuenta HSBC</th><th>Neto</th></tr>${y.emps.map(x=>`<tr><td>${x.id}</td><td>${x.n}</td><td>${x.acc}</td><td>$ ${fmt(x.amt)}</td></tr>`).join('')}</table>`:''}
+ ${h?`<div class="tabs"><a class="${S.tab==='seg'?'on':''}" onclick="S.tab='seg';render()">Seguimiento HSBC H2H</a></div>
+ ${S.tab==='xml'?`<pre>${esc(y.xml)}</pre>`:`
+ <div class="st">${STG.map((l,i)=>{const bad=i===4&&y.rej;return `<div class="stg ${bad?'x':i<y.stage||(i===y.stage&&y.done)?'d':i===y.stage?'c':''}"><u>${bad?'✕':(i<y.stage||(i===y.stage&&y.done))?'✓':i+1}</u>${l}</div>`}).join('')}</div>
+ ${y.stage===4?(y.rej?`<div class="note er">HSBC rechazó el pago: cuenta destino no coincide con el RFC registrado. (mensaje simulado)</div>`:`<div class="note">HSBC aceptó el pago. Clave de rastreo: ${y.track}</div>`):''}
+ <table style="margin-top:12px"><tr><th>Fecha/hora</th><th>Evento</th></tr>${y.log.map(l=>`<tr><td>${l[0]}</td><td>${l[1]}</td></tr>`).join('')}</table>`}`:
+ `<div class="note am" style="margin-top:14px">Método manual: sin envío H2H. Los otros bancos y métodos siguen funcionando como hoy.</div>`}
+ </div>`}
+
+const L=()=>S.ctx==='Proveedores'?'Proveedor':'Cliente';
+function go(c){S.ctx=c;S.view='list';S.modal=null;render()}
+const LB={'HSBC SPEI (H2H)':'SPEI','HSBC SPID (H2H)':'SPID','HSBC OPIS (H2H)':'OPI','HSBC B2B (HSBC-HSBC)':'B2B','HSBC TEF (H2H)':'TEF','HSBC ACH (Nómina HSBC)':'ACH (Nómina)','HSBC Pago de servicios':'Pago de Servicios','HSBC Pago de derechos':'Pago de Derechos'};
+const PV=t=>t.k==='SERV'?P[4]:t.k==='DER'?P[5]:P[3];
+function nuevo(){Object.assign(S,{pay:null,started:false,posted:false,modal:null,tm:false,view:'ord'});setTipo('HSBC SPID (H2H)')}
+function setTipo(k){const t=T[k];Object.assign(S,{tipo:k,ex:{},emp:{},prov:t.nom?P[3]:PV(t),cur:t.cur||'MXN',monto:45320});if(t.nom){EMP.forEach(x=>S.emp[x.id]=x.amt);recalc()}render()}
+function upd(){const e=chk({method:S.tipo,ex:S.ex}),b=$('#er');b.innerHTML=e;b.style.display=e?'':'none';$('#gen').disabled=!!e}
+function generar(){if(chk({method:S.tipo,ex:S.ex}))return;
+ S.modal={journal:'HSBC',method:S.tipo,fecha:today,memo:'P17930',ref:'REF-'+today.replace(/-/g,'')+'-17930',ex:S.ex};
+ crearPago();Object.assign(S,{view:'inv',tab:'seg',started:true,posted:true});render()}
+function ord(){const t=T[S.tipo],p=S.prov,nom=t.nom,cl=p.cl,e=chk({method:S.tipo,ex:S.ex});
+ const D={clabe:['CLABE destino',`${cl} · ${BANKS[cl.slice(0,3)]}`],hsbc:['Cuenta HSBC destino',p.h||'—'],swift:['Cuenta / SWIFT destino',`${cl} · ${p.sw}`],conv:['Cuenta destino',esc(S.ex.conv||'Pendiente de capturar')],emps:['Cuentas destino',selE().length+' cuentas HSBC']}[t.acct];
+ const C=(a,b)=>`<div><div class="k">${a}</div><div class="v">${b}</div></div>`;
+ const extra=nom?`<table><tr><th><input type="checkbox" ${EMP.every(x=>x.id in S.emp)?'checked':''} onchange="selAll()"></th><th>No.</th><th>Empleado</th><th>Cuenta HSBC</th><th>Neto a pagar</th></tr>${EMP.map(x=>{const on=x.id in S.emp;return `<tr><td><input type="checkbox" ${on?'checked':''} onchange="togE('${x.id}')"></td><td>${x.id}</td><td>${x.n}</td><td>${x.acc}</td><td><input type="number" step="0.01" class="in" style="width:130px" value="${on?S.emp[x.id]:x.amt}" ${on?'':'disabled'} onchange="setE('${x.id}',this.value)"></td></tr>`}).join('')}</table>`
+ :t.x.length?`<div class="og">${t.x.map(([k,l])=>`<div style="margin-bottom:12px"><div class="k">${l}</div><input class="in" value="${esc(S.ex[k]||'')}" oninput="S.ex['${k}']=this.value;upd()" onchange="render()"></div>`).join('')}</div>`
+ :`<div class="k">Ninguno adicional — este tipo de pago no requiere datos extra.</div>`;
+ return `<div class="bc"><a onclick="S.view='list';render()">Orden de compra P17930</a> &nbsp;/&nbsp; <b>Nueva Orden de Pago H2H</b></div>
+ <div class="sheet" style="padding:32px"><div class="k">Nueva Orden de Pago H2H</div><h1>Para la factura P17930 (4401339983)</h1>
+ <div class="k">Tipo de pago</div><div class="pills">${Object.keys(LB).map(k=>`<button class="pl ${k===S.tipo?'on':''}" onclick="setTipo('${k}')">${LB[k]}</button>`).join('')}</div>
+ <div class="og">${C('Beneficiario',nom?'Nómina · '+selE().length+' empleados':esc(p.n)+' – '+p.rfc)}${C('Monto',S.cur+' '+fmt(S.monto))}${C('Cuenta ordenante','HSBC •••• '+J.HSBC.acc.slice(-4))}${C('Factura relacionada','P17930 (4401339983)')}${C(D[0],D[1])}${C('Fecha de ejecución',dm(today))}</div>
+ <hr><div style="font-weight:600;margin-bottom:10px">Campos adicionales para ${LB[S.tipo]}</div>${extra}
+ <div class="note er" id="er" style="${e?'':'display:none'}">${e}</div>
+ <div class="inf"><i>i</i>Antes de continuar, el sistema valida que no existan notas de crédito sin aplicar y que el monto coincida con la factura.</div>
+ <div class="big"><button class="p" id="gen" ${e?'disabled':''} onclick="generar()">Generar XML</button> <button onclick="S.view='list';render()">Cancelar</button></div></div>`}
+function elegir(k){const t=T[k];Object.assign(S,{prov:null,ref:t.nom?'Nómina quincenal':'',monto:t.nom?0:1500,cur:t.cur||'MXN',posted:false,pay:null,modal:null,tab:'seg',started:true,view:'inv',tm:false,tipo:k,ex:{},emp:{}});render()}
+function tipoModal(){return `<div class="ov"><div class="md" style="max-width:560px"><h2>Nuevo pago <a style="cursor:pointer" onclick="S.tm=false;render()">✕</a></h2><div class="mb"><div class="mu" style="margin-bottom:10px">¿Qué tipo de pago quieres realizar?</div>${Object.keys(T).map(k=>`<div class="tc" onclick="elegir('${k}')"><b>${k.replace('HSBC ','').replace(/ \(.*\)/,'')}</b><span class="mu">${TD[k]}</span></div>`).join('')}</div></div></div>`}
+function chk(m){const t=T[m.method],p=S.prov||{},e=m.ex||{};
+ if(t.cur&&S.cur!==t.cur)return `${t.k} solo opera en ${t.cur}. Cambia la moneda de la factura (hoy ${S.cur}).`;
+ if(t.nom&&!selE().length)return 'Selecciona al menos un empleado.';
+ if(t.acct==='clabe'&&!okClabe(p.cl))return 'La CLABE del beneficiario no es válida.';
+ if(t.acct==='hsbc'&&!(p.cl.slice(0,3)==='021'&&p.h))return `${t.k} solo aplica entre cuentas HSBC y este beneficiario no tiene una registrada.`;
+ const f=t.x.find(([k])=>!(e[k]||'').trim());return f?'Falta capturar: '+f[1]+'.':''}
+function lst(){const y=S.pay,row=(a,b,c,d,e)=>`<tr><td>${a}</td><td>${b}</td><td>${c}</td><td>${d}</td><td>${e}</td></tr>`;
+ return `<div class="bar"><button class="p" onclick="nuevo()">Nuevo</button><div style="margin:0 auto;border:1px solid var(--bd);background:var(--pn);border-radius:4px;padding:5px 10px;width:min(420px,100%)"><span class="ch">Favoritos ✕</span> <span class="mu">Buscar…</span></div></div>
+ <div class="sheet" style="padding:0"><div class="mu" style="padding:12px 16px">Órdenes de compra · haz clic en Nuevo para crear una Orden de Pago H2H</div>
+ <table><tr><th>Número</th><th>${L()}</th><th>Vencimiento</th><th>Total</th><th>Estado</th></tr>
+ ${S.started?`<tr class="cl" onclick="S.view='inv';render()"><td>${S.posted?'BILL/2026/00019':'Borrador'}</td><td>${T[S.tipo].nom?'Nómina · '+selE().length+' empleados':S.prov?S.prov.n:'—'}</td><td>${dm(today)}</td><td>${fmt(S.monto)} ${S.cur}</td><td>${y?(y.state==='Pagado'?'Pagado':y.state==='Rechazado'?'Pago rechazado':'En proceso de pago'):S.posted?'Registrado':'Borrador'}</td></tr>`:''}
+ ${row('P17929','JUAN PEREZ','15/09/2026','3,200.00 MXN','Pagado')}${row('P17928','DISTRIBUIDORA RIO BRAVO SA DE CV','10/09/2026','12,480.00 MXN','Pagado')}</table></div>`}
+function render(){$('#app').innerHTML=(S.view==='ord'?ord():S.view==='inv'?inv():S.view==='list'?lst():payV())+(S.modal?pagarModal():'')+(S.tm?tipoModal():'')}
+function setProv(i){S.prov=i===''?null:P[i];render()}
+function confirmar(){const t=T[S.tipo];if(t.nom){if(!selE().length||selE().some(x=>!(x.amt>0))){alert('Selecciona al menos un empleado con importe mayor a 0.');return}}else{if(!S.prov){alert('Selecciona un proveedor primero.');return}if(!(S.monto>0)){alert('El importe debe ser mayor a 0.');return}}S.posted=true;render()}
+function abrirPagar(){S.modal={journal:'HSBC',method:S.tipo,fecha:today,memo:S.ref||'BILL/2026/00019',ref:'REF-'+today.replace(/-/g,'')+'-0019',ex:S.ex};render()}
+function crearPago(){const m=S.modal;if(T[m.method]&&chk(m))return;
+ const y=S.pay={name:'PAY00003',journal:m.journal,method:m.method,fecha:m.fecha,memo:m.memo,ref:m.ref,monto:S.monto,state:'En proceso',stage:2,cur:S.cur,ex:{...m.ex},emps:selE(),log:[[hm(),'Pago creado']]};
+ if(spei(y)){y.xml=buildXml(y);y.log.push([hm(),'XML '+T[y.method].k+' generado (pain.001.001.03)'],[hm(),'Aviso enviado al área de pagos'])}
+ S.modal=null;S.view='inv';render()}
+function paso(n,msg){S.pay.stage=n;S.pay.log.push([hm(),msg]);render()}
+function resp(ok){const y=S.pay;y.stage=4;y.done=true;
+ if(ok){y.state='Pagado';y.track='HSBC-'+Math.floor(Math.random()*900000+100000);y.log.push([hm(),'Acuse de HSBC (pain.002): aceptado · '+y.track])}
+ else{y.state='Rechazado';y.rej=true;y.log.push([hm(),'Acuse de HSBC (pain.002): rechazado'])}render()}
+function manualOk(){S.pay.state='Pagado';S.pay.log.push([hm(),'Pago validado manualmente']);render()}
+render();
+</script></body></html>

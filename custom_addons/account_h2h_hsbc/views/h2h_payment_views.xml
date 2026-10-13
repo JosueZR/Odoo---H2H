@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Herencia sobre el formulario de pagos de Odoo 18.
+        Agrega:
+          1. Panel de selección de método H2H con campo real + tarjetas visuales
+          2. Tres botones de acción H2H en el <header>
+          3. Barra de estado h2h_state
+          4. Campos auxiliares invisibles
+    -->
+    <record id="view_account_payment_form_inherit_h2h" model="ir.ui.view">
+        <field name="name">account.payment.form.inherit.h2h</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ── 1. Campos auxiliares invisibles ───────────────────────── -->
+            <xpath expr="//field[@name='payment_method_code']" position="after">
+                <field name="is_hsbc_journal"       invisible="1"/>
+                <field name="h2h_state"             invisible="1"/>
+                <field name="h2h_xml_attachment_id" invisible="1"/>
+            </xpath>
+
+            <!-- ── 2. Botones H2H en el header ──────────────────────────── -->
+            <xpath expr="//header" position="inside">
+
+                <!-- Botón 1: Generar XML -->
+                <button name="action_h2h_generate_xml"
+                        string="Generar XML HSBC"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="not is_hsbc_journal
+                                   or state != 'in_process'
+                                   or h2h_state not in ('draft', 'method_selected')"/>
+
+                <!-- Botón 1b: Descargar XML (disponible desde que existe el adjunto) -->
+                <button name="action_h2h_descargar_xml"
+                        string="⬇ Descargar XML"
+                        type="object"
+                        invisible="not is_hsbc_journal
+                                   or not h2h_xml_attachment_id
+                                   or h2h_state == 'draft'
+                                   or h2h_state == 'method_selected'"/>
+
+                <!-- Botón 2: Enviar a HSBC -->
+                <button name="action_h2h_send_to_bank"
+                        string="Enviar a HSBC"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="not is_hsbc_journal
+                                   or h2h_state != 'xml_generated'"/>
+
+                <!-- Botón 3a: Confirmar pago aceptado por banco -->
+                <button name="action_h2h_confirm_accepted"
+                        string="HSBC: Confirmar pago"
+                        type="object"
+                        class="btn-success"
+                        invisible="not is_hsbc_journal
+                                   or h2h_state != 'sent_to_bank'"/>
+
+                <!-- Botón 3b: Registrar rechazo del banco -->
+                <button name="action_h2h_confirm_rejected"
+                        string="HSBC: Registrar rechazo"
+                        type="object"
+                        class="btn-danger"
+                        invisible="not is_hsbc_journal
+                                   or h2h_state != 'sent_to_bank'"/>
+
+                <!-- Barra de estado H2H -->
+                <field name="h2h_state"
+                       widget="statusbar"
+                       statusbar_visible="draft,method_selected,xml_generated,sent_to_bank,accepted"
+                       invisible="not is_hsbc_journal"/>
+
+            </xpath>
+
+            <!-- ── 3. Panel HSBC H2H dentro del sheet ────────────────────── -->
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <div class="o_h2h_method_panel"
+                     invisible="not is_hsbc_journal or state != 'in_process'">
+
+                    <!-- Separador visual -->
+                    <div class="o_horizontal_separator mt-3 mb-2 fw-bold text-uppercase"
+                         style="font-size:11px; color:#714b67; letter-spacing:.5px;">
+                        Integración HSBC H2H
+                    </div>
+
+                    <!-- Selector real de método (funcional) -->
+                    <div class="row mb-3">
+                        <label for="h2h_method"
+                               class="col-sm-3 col-form-label fw-bold">
+                            Método de pago
+                        </label>
+                        <div class="col-sm-9">
+                            <field name="h2h_method"
+                                   options="{'no_create': True, 'no_open': True}"
+                                   readonly="h2h_state not in ('draft', 'method_selected')"
+                                   placeholder="Selecciona un método HSBC…"/>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas visuales informativas (solo para referencia visual) -->
+                    <div class="d-flex flex-wrap gap-2 mb-2"
+                         invisible="h2h_state not in ('draft', 'method_selected')">
+
+                        <!-- SPEI — activo -->
+                        <div style="min-width:155px; border:2px solid #714b67;
+                                    border-radius:6px; padding:10px 14px; text-align:center;
+                                    background:#f9f5fb;">
+                            <div class="fw-bold" style="color:#714b67;">SPEI</div>
+                            <div class="small text-muted">Transferencia MXN</div>
+                            <span style="font-size:11px; background:#28a745;
+                                         color:#fff; border-radius:10px;
+                                         padding:1px 8px; margin-top:4px; display:inline-block;">
+                                ✓ Disponible
+                            </span>
+                        </div>
+
+                        <!-- SPID — en desarrollo -->
+                        <div style="min-width:155px; border:1px solid #ccc;
+                                    border-radius:6px; padding:10px 14px; text-align:center;
+                                    background:#f8f9fa; opacity:.55; cursor:not-allowed;">
+                            <div class="fw-bold text-muted">SPID</div>
+                            <div class="small text-muted">Transferencia USD</div>
+                            <span style="font-size:11px; background:#6c757d;
+                                         color:#fff; border-radius:10px;
+                                         padding:1px 8px; margin-top:4px; display:inline-block;">
+                                ⏳ En desarrollo
+                            </span>
+                        </div>
+
+                        <!-- Nómina HSBC — en desarrollo -->
+                        <div style="min-width:155px; border:1px solid #ccc;
+                                    border-radius:6px; padding:10px 14px; text-align:center;
+                                    background:#f8f9fa; opacity:.55; cursor:not-allowed;">
+                            <div class="fw-bold text-muted">Nómina HSBC</div>
+                            <div class="small text-muted">Dispersión a empleados</div>
+                            <span style="font-size:11px; background:#6c757d;
+                                         color:#fff; border-radius:10px;
+                                         padding:1px 8px; margin-top:4px; display:inline-block;">
+                                ⏳ En desarrollo
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <!-- Aviso cuando el método ya está fijo (XML generado o posterior) -->
+                    <div class="alert alert-info py-2 small mb-0"
+                         invisible="h2h_state not in ('xml_generated', 'sent_to_bank', 'accepted', 'rejected')">
+                        <b>Método: <field name="h2h_method" readonly="1" nolabel="1"/></b>
+                        — El método no puede cambiarse después de generar el XML.
+                        Para reiniciar, restablece el pago a borrador.
+                    </div>
+
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
