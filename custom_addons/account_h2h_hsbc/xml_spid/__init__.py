@@ -1,4 +1,2 @@
-﻿# -*- coding: utf-8 -*-
-# SPID — En desarrollo.
-# Cuando se implemente, agregar spid_generator.py, spid_validator.py y constants.py
-# y registrar SpidGenerator en generators/registry.py.
+# -*- coding: utf-8 -*-
+from . import spid_generator

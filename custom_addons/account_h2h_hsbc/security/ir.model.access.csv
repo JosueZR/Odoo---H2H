@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_h2h_payment_method_user,h2h.payment.method user,model_h2h_payment_method,account.group_account_user,1,0,0,0
 access_h2h_payment_method_manager,h2h.payment.method manager,model_h2h_payment_method,account.group_account_manager,1,1,1,1
+access_h2h_nomina_line_user,h2h.nomina.line user,model_h2h_nomina_line,account.group_account_user,1,1,1,1
+access_h2h_nomina_line_manager,h2h.nomina.line manager,model_h2h_nomina_line,account.group_account_manager,1,1,1,1
