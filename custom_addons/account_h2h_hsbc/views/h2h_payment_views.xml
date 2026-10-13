@@ -3,10 +3,13 @@
     <!--
         Herencia sobre el formulario de pagos de Odoo 18.
         Agrega:
-          1. Panel de selección de método H2H con campo real + tarjetas visuales
-          2. Tres botones de acción H2H en el <header>
-          3. Barra de estado h2h_state
-          4. Campos auxiliares invisibles
+          1. Botones de acción H2H en el <header> sin emojis
+          2. Campos auxiliares invisibles
+          3. Panel superior HSBC H2H con cuadros compactos interactivos (SPEI, SPID, Nómina, Servicios, etc.)
+          4. Eliminación del campo deslizante / dropdown redundante
+          5. Tabla de dispersión de nómina multi-empleado editable para Nómina HSBC
+          6. Campos complementarios para SPID (USD)
+          7. Adaptación visual de campos según el tipo de pago seleccionado
     -->
     <record id="view_account_payment_form_inherit_h2h" model="ir.ui.view">
         <field name="name">account.payment.form.inherit.h2h</field>
@@ -18,31 +21,31 @@
             <xpath expr="//field[@name='payment_method_code']" position="after">
                 <field name="is_hsbc_journal"       invisible="1"/>
                 <field name="h2h_state"             invisible="1"/>
+                <field name="h2h_method"            invisible="1"/>
+                <field name="h2h_method_code"       invisible="1"/>
                 <field name="h2h_xml_attachment_id" invisible="1"/>
             </xpath>
 
             <!-- ── 2. Botones H2H en el header ──────────────────────────── -->
             <xpath expr="//header" position="inside">
 
-                <!-- Botón 1: Generar XML -->
+                <!-- Botón 1: Generar XML (disponible en borrador o confirmado para pruebas y flujo operativo) -->
                 <button name="action_h2h_generate_xml"
                         string="Generar XML HSBC"
                         type="object"
                         class="oe_highlight"
                         invisible="not is_hsbc_journal
-                                   or state != 'in_process'
                                    or h2h_state not in ('draft', 'method_selected')"/>
 
-                <!-- Botón 1b: Descargar XML (disponible desde que existe el adjunto) -->
+                <!-- Botón 1b: Descargar XML (sin emojis) -->
                 <button name="action_h2h_descargar_xml"
-                        string="⬇ Descargar XML"
+                        string="Descargar XML"
                         type="object"
                         invisible="not is_hsbc_journal
                                    or not h2h_xml_attachment_id
-                                   or h2h_state == 'draft'
-                                   or h2h_state == 'method_selected'"/>
+                                   or h2h_state in ('draft', 'method_selected')"/>
 
-                <!-- Botón 2: Enviar a HSBC -->
+                <!-- Botón 2: Enviar a HSBC (simulación) -->
                 <button name="action_h2h_send_to_bank"
                         string="Enviar a HSBC"
                         type="object"
@@ -74,85 +77,216 @@
 
             </xpath>
 
-            <!-- ── 3. Panel HSBC H2H dentro del sheet ────────────────────── -->
-            <xpath expr="//field[@name='currency_id']" position="after">
-                <div class="o_h2h_method_panel"
-                     invisible="not is_hsbc_journal or state != 'in_process'">
+            <!-- ── 3. Panel de selección al inicio del formulario (arriba de main_group) ── -->
+            <xpath expr="//group[@name='main_group']" position="before">
+                <div class="o_h2h_method_panel mb-3" invisible="not is_hsbc_journal">
 
-                    <!-- Separador visual -->
-                    <div class="o_horizontal_separator mt-3 mb-2 fw-bold text-uppercase"
-                         style="font-size:11px; color:#714b67; letter-spacing:.5px;">
-                        Integración HSBC H2H
+                    <!-- Encabezado sutil del panel -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                        <span class="fw-bold text-uppercase" style="font-size:11px; color:#714b67; letter-spacing:.5px;">
+                            Integración HSBC Host to Host (H2H) - Selección de Método
+                        </span>
+                        <span class="badge text-bg-light text-muted border" style="font-size:10px;">
+                            Canal Host to Host
+                        </span>
                     </div>
 
-                    <!-- Selector real de método (funcional) -->
-                    <div class="row mb-3">
-                        <label for="h2h_method"
-                               class="col-sm-3 col-form-label fw-bold">
-                            Método de pago
-                        </label>
-                        <div class="col-sm-9">
-                            <field name="h2h_method"
-                                   options="{'no_create': True, 'no_open': True}"
-                                   readonly="h2h_state not in ('draft', 'method_selected')"
-                                   placeholder="Selecciona un método HSBC…"/>
-                        </div>
-                    </div>
-
-                    <!-- Tarjetas visuales informativas (solo para referencia visual) -->
+                    <!-- Cuadros de selección compactos, uniformes y limpios (sin emojis) -->
                     <div class="d-flex flex-wrap gap-2 mb-2"
-                         invisible="h2h_state not in ('draft', 'method_selected')">
+                         invisible="h2h_state in ('sent_to_bank', 'accepted')">
 
-                        <!-- SPEI — activo -->
-                        <div style="min-width:155px; border:2px solid #714b67;
-                                    border-radius:6px; padding:10px 14px; text-align:center;
-                                    background:#f9f5fb;">
-                            <div class="fw-bold" style="color:#714b67;">SPEI</div>
-                            <div class="small text-muted">Transferencia MXN</div>
-                            <span style="font-size:11px; background:#28a745;
-                                         color:#fff; border-radius:10px;
-                                         padding:1px 8px; margin-top:4px; display:inline-block;">
-                                ✓ Disponible
-                            </span>
-                        </div>
+                        <!-- ── SPEI: Seleccionado ── -->
+                        <button name="action_select_h2h_spei"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code != 'SPEI'">
+                            <div style="min-width:130px; max-width:145px; border:2px solid #714b67; border-radius:6px; padding:6px 10px; text-align:center; background:#f9f5fb; box-shadow:0 1px 3px rgba(113,75,103,0.15);">
+                                <div class="fw-bold" style="color:#714b67; font-size:13px; line-height:1.2;">SPEI</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Transferencia MXN</div>
+                                <span style="font-size:9px; background:#714b67; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block; font-weight:600;">
+                                    Seleccionado
+                                </span>
+                            </div>
+                        </button>
+                        <!-- ── SPEI: Disponible ── -->
+                        <button name="action_select_h2h_spei"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code == 'SPEI'">
+                            <div style="min-width:130px; max-width:145px; border:1px solid #ced4da; border-radius:6px; padding:6px 10px; text-align:center; background:#ffffff;">
+                                <div class="fw-bold text-dark" style="font-size:13px; line-height:1.2;">SPEI</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Transferencia MXN</div>
+                                <span style="font-size:9px; background:#198754; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                    Disponible
+                                </span>
+                            </div>
+                        </button>
 
-                        <!-- SPID — en desarrollo -->
-                        <div style="min-width:155px; border:1px solid #ccc;
-                                    border-radius:6px; padding:10px 14px; text-align:center;
-                                    background:#f8f9fa; opacity:.55; cursor:not-allowed;">
-                            <div class="fw-bold text-muted">SPID</div>
-                            <div class="small text-muted">Transferencia USD</div>
-                            <span style="font-size:11px; background:#6c757d;
-                                         color:#fff; border-radius:10px;
-                                         padding:1px 8px; margin-top:4px; display:inline-block;">
-                                ⏳ En desarrollo
-                            </span>
-                        </div>
+                        <!-- ── SPID: Seleccionado ── -->
+                        <button name="action_select_h2h_spid"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code != 'SPID'">
+                            <div style="min-width:130px; max-width:145px; border:2px solid #714b67; border-radius:6px; padding:6px 10px; text-align:center; background:#f9f5fb; box-shadow:0 1px 3px rgba(113,75,103,0.15);">
+                                <div class="fw-bold" style="color:#714b67; font-size:13px; line-height:1.2;">SPID</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Transferencia USD</div>
+                                <span style="font-size:9px; background:#714b67; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block; font-weight:600;">
+                                    Seleccionado
+                                </span>
+                            </div>
+                        </button>
+                        <!-- ── SPID: Disponible ── -->
+                        <button name="action_select_h2h_spid"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code == 'SPID'">
+                            <div style="min-width:130px; max-width:145px; border:1px solid #ced4da; border-radius:6px; padding:6px 10px; text-align:center; background:#ffffff;">
+                                <div class="fw-bold text-dark" style="font-size:13px; line-height:1.2;">SPID</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Transferencia USD</div>
+                                <span style="font-size:9px; background:#198754; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                    Disponible
+                                </span>
+                            </div>
+                        </button>
 
-                        <!-- Nómina HSBC — en desarrollo -->
-                        <div style="min-width:155px; border:1px solid #ccc;
-                                    border-radius:6px; padding:10px 14px; text-align:center;
-                                    background:#f8f9fa; opacity:.55; cursor:not-allowed;">
-                            <div class="fw-bold text-muted">Nómina HSBC</div>
-                            <div class="small text-muted">Dispersión a empleados</div>
-                            <span style="font-size:11px; background:#6c757d;
-                                         color:#fff; border-radius:10px;
-                                         padding:1px 8px; margin-top:4px; display:inline-block;">
-                                ⏳ En desarrollo
+                        <!-- ── Nómina HSBC: Seleccionada ── -->
+                        <button name="action_select_h2h_nomina"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code != 'NOMINA'">
+                            <div style="min-width:130px; max-width:145px; border:2px solid #714b67; border-radius:6px; padding:6px 10px; text-align:center; background:#f9f5fb; box-shadow:0 1px 3px rgba(113,75,103,0.15);">
+                                <div class="fw-bold" style="color:#714b67; font-size:13px; line-height:1.2;">Nómina HSBC</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Dispersión empleados</div>
+                                <span style="font-size:9px; background:#714b67; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block; font-weight:600;">
+                                    Seleccionado
+                                </span>
+                            </div>
+                        </button>
+                        <!-- ── Nómina HSBC: Disponible ── -->
+                        <button name="action_select_h2h_nomina"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code == 'NOMINA'">
+                            <div style="min-width:130px; max-width:145px; border:1px solid #ced4da; border-radius:6px; padding:6px 10px; text-align:center; background:#ffffff;">
+                                <div class="fw-bold text-dark" style="font-size:13px; line-height:1.2;">Nómina HSBC</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Dispersión empleados</div>
+                                <span style="font-size:9px; background:#198754; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                    Disponible
+                                </span>
+                            </div>
+                        </button>
+
+                        <!-- ── Servicios: Seleccionado ── -->
+                        <button name="action_select_h2h_servicios"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code != 'SERVICIOS'">
+                            <div style="min-width:130px; max-width:145px; border:2px solid #714b67; border-radius:6px; padding:6px 10px; text-align:center; background:#f9f5fb; box-shadow:0 1px 3px rgba(113,75,103,0.15);">
+                                <div class="fw-bold" style="color:#714b67; font-size:13px; line-height:1.2;">Servicios</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Pago B2B MXN</div>
+                                <span style="font-size:9px; background:#714b67; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block; font-weight:600;">
+                                    Seleccionado
+                                </span>
+                            </div>
+                        </button>
+                        <!-- ── Servicios: Disponible ── -->
+                        <button name="action_select_h2h_servicios"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code == 'SERVICIOS'">
+                            <div style="min-width:130px; max-width:145px; border:1px solid #ced4da; border-radius:6px; padding:6px 10px; text-align:center; background:#ffffff;">
+                                <div class="fw-bold text-dark" style="font-size:13px; line-height:1.2;">Servicios</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Pago B2B MXN</div>
+                                <span style="font-size:9px; background:#198754; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                    Disponible
+                                </span>
+                            </div>
+                        </button>
+
+                        <!-- ── OPI (En desarrollo - Sin emojis) ── -->
+                        <div style="min-width:130px; max-width:145px; border:1px dashed #adb5bd; border-radius:6px; padding:6px 10px; text-align:center; background:#f8f9fa; opacity:0.65; cursor:not-allowed;">
+                            <div class="fw-bold text-muted" style="font-size:13px; line-height:1.2;">OPI</div>
+                            <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Orden de pago</div>
+                            <span style="font-size:9px; background:#6c757d; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                En desarrollo
                             </span>
                         </div>
 
                     </div>
 
-                    <!-- Aviso cuando el método ya está fijo (XML generado o posterior) -->
-                    <div class="alert alert-info py-2 small mb-0"
-                         invisible="h2h_state not in ('xml_generated', 'sent_to_bank', 'accepted', 'rejected')">
-                        <b>Método: <field name="h2h_method" readonly="1" nolabel="1"/></b>
-                        — El método no puede cambiarse después de generar el XML.
-                        Para reiniciar, restablece el pago a borrador.
+                    <!-- Aviso informativo cuando el XML ya fue generado -->
+                    <div class="alert alert-info py-2 small mb-2"
+                         invisible="h2h_state != 'xml_generated'">
+                        <b>Método actual: <field name="h2h_method" readonly="1" nolabel="1"/></b>
+                        — Archivo XML generado. Si cambia de método de pago, el formulario se adaptará y podrá generar el nuevo XML correspondiente.
                     </div>
+
+                    <!-- Aviso cuando el pago ya fue enviado o confirmado ante el banco -->
+                    <div class="alert alert-secondary py-2 small mb-2"
+                         invisible="h2h_state not in ('sent_to_bank', 'accepted')">
+                        <b>Método transmitido: <field name="h2h_method" readonly="1" nolabel="1"/></b>
+                        — La instrucción de pago ya fue enviada a HSBC y el método no puede modificarse.
+                    </div>
+
+                    <!-- ── Sección especial de Nómina multi-empleado (visible cuando h2h_method_code == 'NOMINA') ── -->
+                    <div invisible="h2h_method_code != 'NOMINA'" class="card p-3 mb-3 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color:#714b67;">
+                                    Dispersión de Nómina HSBC - Relación de Empleados
+                                </h6>
+                                <small class="text-muted">
+                                    Capture o seleccione los empleados, su cuenta HSBC (10 dígitos) y el importe neto individual. El XML consolidará todos los pagos en un solo lote.
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge text-bg-primary fs-6 me-1">
+                                    <field name="h2h_nomina_count" readonly="1"/> Empleados
+                                </span>
+                                <span class="badge text-bg-secondary fs-6">
+                                    Total: <field name="h2h_nomina_total" widget="monetary" readonly="1"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <field name="h2h_nomina_line_ids" readonly="h2h_state not in ('draft', 'method_selected')">
+                            <list editable="bottom">
+                                <field name="partner_id" string="Empleado" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="partner_bank_id" string="Cuenta bancaria" domain="[('partner_id', '=', partner_id)]" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="acc_number" string="Cuenta HSBC (10 dígitos)"/>
+                                <field name="bank_name" string="Banco"/>
+                                <field name="amount" string="Importe neto" sum="Total Nómina"/>
+                                <field name="referencia_empleado" string="Referencia"/>
+                                <field name="validation_status" string="Estado" widget="badge"
+                                       decoration-success="validation_status == 'valid'"
+                                       decoration-danger="validation_status == 'error'"
+                                       decoration-muted="validation_status == 'pending'"/>
+                                <field name="error_details" string="Detalle de validación" optional="hide"/>
+                            </list>
+                        </field>
+                    </div>
+
+                    <!-- ── Datos complementarios requeridos para SPID (USD) ── -->
+                    <group string="Datos requeridos para SPID (USD)"
+                           invisible="h2h_method_code != 'SPID'">
+                        <field name="h2h_spid_codigo"
+                               readonly="h2h_state not in ('draft', 'method_selected')"
+                               required="h2h_method_code == 'SPID'"/>
+                        <field name="h2h_spid_rfc"
+                               placeholder="Ej. RFC del beneficiario"
+                               readonly="h2h_state not in ('draft', 'method_selected')"
+                               required="h2h_method_code == 'SPID'"/>
+                        <field name="h2h_spid_referencia_larga"
+                               placeholder="Referencia al beneficiario (máximo 40 caracteres)"
+                               readonly="h2h_state not in ('draft', 'method_selected')"/>
+                    </group>
 
                 </div>
+            </xpath>
+
+            <!-- ── 4. Adaptar visibilidad de Proveedor (Vendor) en modo Nómina ── -->
+            <xpath expr="//field[@name='partner_id'][@invisible=&quot;partner_type != 'supplier'&quot;]" position="attributes">
+                <attribute name="invisible">partner_type != 'supplier' or (is_hsbc_journal and h2h_method_code == 'NOMINA')</attribute>
             </xpath>
 
         </field>

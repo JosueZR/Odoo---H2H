@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from odoo import models, fields
 
 
@@ -20,4 +20,10 @@ class AccountJournal(models.Model):
         string="BIC / SWIFT HSBC",
         default="BIMEMXMM",
         help="Código BIC del banco ordenante (HSBC México = BIMEMXMM).",
+    )
+    hsbc_nomina_account = fields.Char(
+        string="Cuenta HSBC Nómina",
+        help="Número de cuenta HSBC de dispersión de nómina (10 dígitos). "
+             "Es la cuenta interna HSBC desde la que se dispersa la nómina a empleados. "
+             "Requerida únicamente para pagos de tipo Nómina HSBC.",
     )

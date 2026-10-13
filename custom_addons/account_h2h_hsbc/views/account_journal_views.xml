@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
         Herencia sobre el formulario de diarios de Odoo 18.
@@ -26,6 +26,11 @@
                     <field name="hsbc_bic"
                            invisible="not is_h2h_enabled"
                            placeholder="Ej. BIMEMXMM"/>
+
+                    <field name="hsbc_nomina_account"
+                           invisible="not is_h2h_enabled"
+                           placeholder="Ej. 4043001353 (10 dígitos)"
+                           help="Cuenta HSBC interna de 10 dígitos para dispersión de nómina."/>
 
                 </group>
             </xpath>

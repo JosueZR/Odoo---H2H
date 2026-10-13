@@ -1,10 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
         Catálogo de métodos de pago HSBC H2H.
         Para habilitar un método futuro: cambiar is_available a True
         y agregar el generador correspondiente en generators/registry.py.
         No es necesario modificar ningún otro archivo.
+
+        Métodos activos:
+          - SPEI      — Transferencia nacional MXN
+          - SPID      — Transferencia internacional USD
+          - NOMINA    — Dispersión de nómina HSBC
+          - SERVICIOS — Pago a proveedores MXN
     -->
 
     <!-- SPEI — Activo -->
@@ -16,22 +22,56 @@
         <field name="sequence">10</field>
     </record>
 
-    <!-- SPID — En desarrollo -->
+    <!-- SPID — Activo (USD, requiere RFC y código de operación) -->
     <record id="h2h_method_spid" model="h2h.payment.method">
         <field name="code">SPID</field>
         <field name="name">SPID</field>
         <field name="description">Transferencia internacional en dólares (USD)</field>
-        <field name="is_available" eval="False"/>
+        <field name="is_available" eval="True"/>
         <field name="sequence">20</field>
     </record>
 
-    <!-- Nómina HSBC — En desarrollo -->
+    <!-- Nómina HSBC — Activo (dispersión a cuentas HSBC 10 dígitos) -->
     <record id="h2h_method_nomina" model="h2h.payment.method">
-        <field name="code">ACH</field>
+        <field name="code">NOMINA</field>
         <field name="name">Nómina HSBC</field>
-        <field name="description">Dispersión de nómina a cuentas HSBC</field>
-        <field name="is_available" eval="False"/>
+        <field name="description">Dispersión de nómina a cuentas HSBC (10 dígitos)</field>
+        <field name="is_available" eval="True"/>
         <field name="sequence">30</field>
+    </record>
+
+    <!-- Servicios — Activo (proveedores en MXN, B2B o CLABE) -->
+    <record id="h2h_method_servicios" model="h2h.payment.method">
+        <field name="code">SERVICIOS</field>
+        <field name="name">Servicios</field>
+        <field name="description">Pago a proveedores en MXN (cuenta B2B o CLABE SPEI)</field>
+        <field name="is_available" eval="True"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <!-- OPI — En desarrollo -->
+    <record id="h2h_method_opi" model="h2h.payment.method">
+        <field name="code">OPI</field>
+        <field name="name">OPI</field>
+        <field name="description">Orden de pago interbancaria (en desarrollo)</field>
+        <field name="is_available" eval="False"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="h2h_method_swift" model="h2h.payment.method">
+        <field name="code">SWIFT</field>
+        <field name="name">SWIFT / Internacional</field>
+        <field name="description">Transferencias internacionales multimoneda vía SWIFT</field>
+        <field name="is_available" eval="False"/>
+        <field name="sequence">60</field>
+    </record>
+
+    <record id="h2h_method_domiciliacion" model="h2h.payment.method">
+        <field name="code">DOMICILIACION</field>
+        <field name="name">Cobranza / Domiciliación</field>
+        <field name="description">Dispersión de cargos recurrentes domiciliados</field>
+        <field name="is_available" eval="False"/>
+        <field name="sequence">70</field>
     </record>
 
 </odoo>

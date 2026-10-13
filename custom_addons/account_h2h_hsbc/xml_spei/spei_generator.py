@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Generador XML SPEI para HSBC H2H.
 Implementa BaseH2HGenerator y produce un archivo pain.001.001.03.
@@ -12,7 +12,7 @@ from .constants import (
     XML_NAMESPACE, XML_NAMESPACE_XSI,
     SVC_LVL_CODE, PMT_MTD, CURRENCY, COUNTRY, BIC_DEFAULT,
 )
-from .spei_validator import validar_pago_spei
+from .spei_validator import validar_pago_spei, validar_xml_spei
 
 
 class SpeiGenerator(BaseH2HGenerator):
@@ -150,4 +150,8 @@ class SpeiGenerator(BaseH2HGenerator):
             b'<?xml version="1.0" encoding="UTF-8" ?>',
             1,
         )
+
+        # Validar el XML generado con el validador estructural de SPEI
+        validar_xml_spei(pretty)
+
         return pretty
