@@ -127,7 +127,7 @@ class AccountPayment(models.Model):
         string="Método de pago HSBC",
         copy=False,
         domain="[('is_available', '=', True)]",
-        help="Método H2H seleccionado: SPEI, SPID, Nómina, Servicios.",
+        help="Método H2H seleccionado: SPEI, SPID, Nómina, Servicios, OPI.",
     )
 
     # ── Campo auxiliar para la vista ─────────────────────────────────────────
@@ -168,6 +168,72 @@ class AccountPayment(models.Model):
         size=40,
         help="Referencia que se entrega al beneficiario SPID. "
              "Máximo 40 caracteres. Se incluye en RmtInf/Ustrd del XML.",
+    )
+
+    # ── Campos específicos de OPI (Orden de Pago Internacional / Cross Border) ──
+    h2h_opi_chrgbr = fields.Selection(
+        selection=[
+            ("SHAR", "SHAR — Compartidas (ordenante y beneficiario)"),
+            ("DEBT", "DEBT — Las paga el ordenante"),
+            ("CRED", "CRED — Las paga el beneficiario"),
+        ],
+        string="Comisiones OPI (ChrgBr)",
+        default="SHAR",
+        copy=False,
+        help="Define quién paga las comisiones del pago internacional. "
+             "Con SHAR se cobra comisión tanto al ordenante como al beneficiario.",
+    )
+    h2h_opi_purp_code = fields.Selection(
+        selection=[
+            ("CINV", "CINV — Pago de factura comercial"),
+            ("GDDS", "GDDS — Pago de bienes"),
+            ("INTC", "INTC — Transferencia entre cuentas propias"),
+            ("SUPP", "SUPP — Pago a proveedor"),
+            ("SALA", "SALA — Pago de nómina"),
+            ("TAXS", "TAXS — Pago de impuestos"),
+        ],
+        string="Propósito ISO OPI (Purp)",
+        default="CINV",
+        copy=False,
+        help="Código ISO 20022 global del propósito del pago (Purp/Cd).",
+    )
+    h2h_opi_reg_code = fields.Selection(
+        selection=[
+            ("01", "01 — Pago a proveedores"),
+            ("02", "02 — Pago de impuestos"),
+            ("03", "03 — Envío de pago a casa matriz"),
+            ("04", "04 — Pago a filiales o subsidiarias"),
+            ("05", "05 — Pago de créditos"),
+            ("06", "06 — Pago de seguros"),
+            ("07", "07 — Pago Fideicomisos"),
+            ("08", "08 — Pago de servicios"),
+            ("09", "09 — Pago a tarjeta de crédito"),
+            ("10", "10 — Pago a tarjeta de débito"),
+            ("11", "11 — Pago de nómina"),
+            ("12", "12 — Pago de inversiones"),
+            ("13", "13 — Pago otras operaciones"),
+            ("14", "14 — Pago a proveedores locales"),
+            ("15", "15 — Pago a clientes locales"),
+            ("16", "16 — Pago de proveedores fronterizos"),
+            ("17", "17 — Pago a clientes fronterizos"),
+            ("18", "18 — Inversión"),
+            ("19", "19 — Pago de bienes"),
+            ("20", "20 — Otorgamiento de préstamo"),
+            ("21", "21 — Pago de préstamo"),
+            ("22", "22 — Otros"),
+        ],
+        string="Propósito regulatorio OPI",
+        default="01",
+        copy=False,
+        help="Catálogo 'Propósito del Pago' (01 a 22) para el reporte regulatorio. "
+             "Se incluye en RgltryRptg/Dtls/Inf como '/BENEFRES/MX//{codigo}'.",
+    )
+    h2h_opi_referencia_larga = fields.Char(
+        string="Referencia OPI (Ustrd)",
+        copy=False,
+        size=140,
+        help="Texto libre para el beneficiario (ej. número de factura). Máximo 140 caracteres. "
+             "Si se deja vacío se usa el Memo del pago.",
     )
 
     # ── Gestión de Nómina Multi-Empleado (tabla editable) ──────────────────────
@@ -222,6 +288,10 @@ class AccountPayment(models.Model):
     def action_select_h2h_servicios(self):
         """Selecciona el método Servicios desde el cuadro visual."""
         self._select_h2h_method_by_code("SERVICIOS")
+
+    def action_select_h2h_opi(self):
+        """Selecciona el método OPI (Cross Border) desde el cuadro visual."""
+        self._select_h2h_method_by_code("OPI")
 
     def _select_h2h_method_by_code(self, code: str):
         """
@@ -279,8 +349,15 @@ class AccountPayment(models.Model):
             moneda_usd = self.env["res.currency"].search([("name", "=", "USD")], limit=1)
             if moneda_usd:
                 vals["currency_id"] = moneda_usd.id
-        elif metodo_anterior == "SPID" and code in ("SPEI", "NOMINA", "SERVICIOS"):
-            # Si venía de SPID (USD) y pasa a un método nacional, ajustar a MXN
+        elif code == "OPI":
+            # OPI opera en moneda extranjera (nunca MXN): si el pago está en MXN,
+            # proponer USD. Si ya está en otra divisa (EUR, GBP...) se respeta.
+            if self.currency_id.name == "MXN":
+                moneda_usd = self.env["res.currency"].search([("name", "=", "USD")], limit=1)
+                if moneda_usd:
+                    vals["currency_id"] = moneda_usd.id
+        elif metodo_anterior in ("SPID", "OPI") and code in ("SPEI", "NOMINA", "SERVICIOS"):
+            # Si venía de un método en divisa extranjera y pasa a uno nacional, ajustar a MXN
             moneda_mxn = self.env["res.currency"].search([("name", "=", "MXN")], limit=1)
             if moneda_mxn:
                 vals["currency_id"] = moneda_mxn.id
@@ -291,6 +368,15 @@ class AccountPayment(models.Model):
                 "h2h_spid_codigo": False,
                 "h2h_spid_rfc": False,
                 "h2h_spid_referencia_larga": False,
+            })
+
+        # 2b. Si venía de OPI y pasa a otro método, restablecer los campos residuales de OPI
+        if metodo_anterior == "OPI" and code != "OPI":
+            vals.update({
+                "h2h_opi_chrgbr": "SHAR",
+                "h2h_opi_purp_code": "CINV",
+                "h2h_opi_reg_code": "01",
+                "h2h_opi_referencia_larga": False,
             })
 
         # 3. Si pasa a Nómina y ya existen líneas capturadas con importe, sincronizar el total
@@ -551,6 +637,30 @@ class AccountPayment(models.Model):
                             f"Servicios HSBC requiere SvcLvl/Cd = 'NURG'. "
                             f"Valor encontrado: '{cd}'."
                         )
+
+        # ── OPI ───────────────────────────────────────────────────────────────
+        elif method_code == "OPI":
+            pmt_tp = find_tag(pmt_inf, "PmtTpInf")
+            if pmt_tp is not None:
+                svc_lvl = find_tag(pmt_tp, "SvcLvl")
+                if svc_lvl is not None:
+                    cd = get_text(svc_lvl, "Cd")
+                    if cd != "URGP":
+                        raise UserError(
+                            f"OPI requiere SvcLvl/Cd = 'URGP'. Valor encontrado: '{cd}'."
+                        )
+            amt = find_tag(cdt_trf, "Amt")
+            if amt is not None:
+                instd = find_tag(amt, "InstdAmt")
+                if instd is not None and instd.get("Ccy") == "MXN":
+                    raise UserError("OPI requiere moneda extranjera. No se permite MXN.")
+            if find_tag(cdt_trf, "ChrgBr") is None:
+                raise UserError("OPI requiere el elemento ChrgBr (DEBT, CRED o SHAR).")
+            if find_tag(cdt_trf, "RgltryRptg") is None:
+                raise UserError(
+                    "OPI requiere el elemento RgltryRptg con el propósito regulatorio. "
+                    "El XML OPI está incompleto."
+                )
 
         # ── SPID ──────────────────────────────────────────────────────────────
         elif method_code == "SPID":

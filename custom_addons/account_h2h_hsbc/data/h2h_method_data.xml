@@ -11,6 +11,7 @@
           - SPID      — Transferencia internacional USD
           - NOMINA    — Dispersión de nómina HSBC
           - SERVICIOS — Pago a proveedores MXN
+          - OPI       — Orden de pago internacional (Cross Border)
     -->
 
     <!-- SPEI — Activo -->
@@ -49,12 +50,12 @@
         <field name="sequence">40</field>
     </record>
 
-    <!-- OPI — En desarrollo -->
+    <!-- OPI — Activo (Cross Border: BIC, IBAN/cuenta, ChrgBr, moneda extranjera) -->
     <record id="h2h_method_opi" model="h2h.payment.method">
         <field name="code">OPI</field>
         <field name="name">OPI</field>
-        <field name="description">Orden de pago interbancaria (en desarrollo)</field>
-        <field name="is_available" eval="False"/>
+        <field name="description">Orden de pago internacional (Cross Border) en moneda extranjera</field>
+        <field name="is_available" eval="True"/>
         <field name="sequence">50</field>
     </record>
 

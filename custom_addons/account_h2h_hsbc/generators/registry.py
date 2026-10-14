@@ -13,12 +13,14 @@ Métodos actualmente implementados:
   - SPID      — Transferencia USD (SvcLvl URGP, RFC obligatorio, código operación)
   - NOMINA    — Dispersión de nómina HSBC (SvcLvl NURG, CtgyPurp SALA, 10 dígitos)
   - SERVICIOS — Pago a proveedores MXN (SvcLvl NURG, B2B 10 o CLABE 18 dígitos)
+  - OPI       — Orden de Pago Internacional / Cross Border (BIC, IBAN u otra cuenta, ChrgBr)
 """
 from odoo.exceptions import UserError
 from ..xml_spei.spei_generator import SpeiGenerator
 from ..xml_spid.spid_generator import SpidGenerator
 from ..xml_nomina.nomina_generator import NominaGenerator
 from ..xml_servicios.servicios_generator import ServiciosGenerator
+from ..xml_opi.opi_generator import OpiGenerator
 
 # ── Registro de generadores activos ───────────────────────────────────────────
 # clave  = h2h.payment.method.code (debe coincidir exactamente)
@@ -28,6 +30,7 @@ REGISTRY = {
     "SPID":      SpidGenerator(),
     "NOMINA":    NominaGenerator(),
     "SERVICIOS": ServiciosGenerator(),
+    "OPI":       OpiGenerator(),
 }
 
 

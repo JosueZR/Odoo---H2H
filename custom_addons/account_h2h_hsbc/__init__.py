@@ -5,3 +5,4 @@ from . import xml_spei
 from . import xml_spid
 from . import xml_nomina
 from . import xml_servicios
+from . import xml_opi

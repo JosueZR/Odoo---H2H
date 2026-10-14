@@ -94,6 +94,52 @@ class DummyPayment:
         self.h2h_nomina_line_ids = h2h_nomina_line_ids or []
 
 
+class DummyCountry:
+    def __init__(self, code):
+        self.code = code
+
+
+class DummyBank:
+    def __init__(self, bic):
+        self.bic = bic
+
+
+class DummyOpiPartnerBank:
+    def __init__(self, acc_number, bic, acc_type="bank"):
+        self.acc_number = acc_number
+        self.acc_type = acc_type
+        self.bank_id = DummyBank(bic)
+
+
+class DummyOpiPartner:
+    def __init__(self, name="JOHN SMITH TRADING LLC", street="Bush Street 13",
+                 zip="94108", city="San Francisco", country="US"):
+        self.name = name
+        self.street = street
+        self.zip = zip
+        self.city = city
+        self.country_id = DummyCountry(country) if country else None
+
+
+class DummyOpiPayment:
+    """Pago OPI de prueba. Por defecto: 0.50 USD a Estados Unidos (sin IBAN)."""
+    def __init__(self, **kw):
+        self.id = 7
+        self.name = kw.get("name", "PBNK1/2026/00001")
+        self.amount = kw.get("amount", 0.50)
+        self.date = "2026-10-13"
+        self.memo = kw.get("memo", "")
+        self.company_id = DummyCompany()
+        self.currency_id = DummyCurrency(kw.get("currency", "USD"))
+        self.partner_id = kw.get("partner") or DummyOpiPartner()
+        self.partner_bank_id = kw.get("partner_bank", DummyOpiPartnerBank("0011223344", "BOFAUS3N"))
+        self.journal_id = DummyJournal(acc_number=kw.get("journal_acc", "4043001353"))
+        self.h2h_opi_chrgbr = kw.get("chrgbr", "SHAR")
+        self.h2h_opi_purp_code = kw.get("purp", "CINV")
+        self.h2h_opi_reg_code = kw.get("reg", "01")
+        self.h2h_opi_referencia_larga = kw.get("ref", "Invoice TEST-001")
+
+
 class TestH2HGenerators(unittest.TestCase):
 
     def setUp(self):
@@ -120,8 +166,8 @@ class TestH2HGenerators(unittest.TestCase):
         self.validar_xml_servicios = validar_xml_servicios
 
     def test_01_registry_contains_all_four_methods(self):
-        """Verifica que los 4 generadores estén debidamente registrados en el registry."""
-        metodos = ["SPEI", "SPID", "NOMINA", "SERVICIOS"]
+        """Verifica que los 5 generadores estén debidamente registrados en el registry."""
+        metodos = ["SPEI", "SPID", "NOMINA", "SERVICIOS", "OPI"]
         for m in metodos:
             self.assertIn(m, self.REGISTRY, f"El método {m} debe estar registrado en REGISTRY.")
             gen = self.get_generator(m)
@@ -416,31 +462,99 @@ class TestH2HGenerators(unittest.TestCase):
             self.validar_xml_nomina(xml_alterado)
 
 
-    def test_10_method_switch_and_opi_views_verification(self):
-        """Verifica que OPI sea el método en desarrollo en las vistas y datos, y que no existan SWIFT/Domiciliación en vistas."""
+    def test_10_opi_method_enabled_in_data_and_views(self):
+        """Verifica que OPI esté activo en datos y vistas, y que no existan SWIFT/Domiciliación en vistas."""
         from pathlib import Path
         root = Path(__file__).parent.parent
 
-        # 1. Verificar h2h_method_data.xml
         data_xml = (root / "data" / "h2h_method_data.xml").read_text(encoding="utf-8")
-        self.assertIn('id="h2h_method_opi"', data_xml)
-        self.assertIn('<field name="code">OPI</field>', data_xml)
-        self.assertIn('<field name="is_available" eval="False"/>', data_xml)
+        bloque = data_xml.split('id="h2h_method_opi"')[1].split("</record>")[0]
+        self.assertIn('<field name="code">OPI</field>', bloque)
+        self.assertIn('<field name="is_available" eval="True"/>', bloque)
 
-        # 2. Verificar h2h_payment_views.xml
         views_xml = (root / "views" / "h2h_payment_views.xml").read_text(encoding="utf-8")
-        # Debe contener OPI en desarrollo
-        self.assertIn("OPI", views_xml)
-        self.assertIn("Orden de pago", views_xml)
-        self.assertIn("En desarrollo", views_xml)
+        self.assertIn('name="action_select_h2h_opi"', views_xml)
+        self.assertIn("h2h_opi_chrgbr", views_xml)
+        self.assertIn("h2h_opi_reg_code", views_xml)
+        self.assertNotIn("En desarrollo", views_xml)
 
-        # No debe contener cuadros visuales de SWIFT ni Domiciliación
         self.assertNotIn("SWIFT / Internacional", views_xml)
         self.assertNotIn("Cobro recurrente", views_xml)
         self.assertNotIn("Domiciliación", views_xml)
-
-        # 3. Debe permitir cambiar método antes de enviar al banco
         self.assertIn('invisible="h2h_state in (\'sent_to_bank\', \'accepted\')"', views_xml)
+
+    def test_11_opi_generator_usd_cuenta_normal(self):
+        """OPI a EE.UU.: BIC, cuenta normal (Othr/Id), ChrgBr, RgltryRptg y Purp."""
+        from ..xml_opi.opi_validator import validar_xml_opi
+        pago = DummyOpiPayment()
+        xml_bytes = self.get_generator("OPI").generate(pago)
+        self.assertTrue(xml_bytes.startswith(b"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"))
+        validar_xml_opi(xml_bytes)
+
+        ns = "{urn:iso:std:iso:20022:tech:xsd:pain.001.001.03}"
+        root = ET.fromstring(xml_bytes)
+        cdt = root.find(f".//{ns}CdtTrfTxInf")
+        self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").attrib["Ccy"], "USD")
+        self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").text, "0.50")
+        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "SHAR")
+        self.assertEqual(cdt.find(f"{ns}CdtrAgt/{ns}FinInstnId/{ns}BIC").text, "BOFAUS3N")
+        self.assertIsNone(cdt.find(f".//{ns}ClrSysMmbId"))
+        self.assertEqual(cdt.find(f"{ns}Cdtr/{ns}PstlAdr/{ns}PstCd").text, "94108")
+        self.assertEqual(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}Othr/{ns}Id").text, "0011223344")
+        self.assertIsNone(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}IBAN"))
+        self.assertEqual(cdt.find(f"{ns}RgltryRptg/{ns}Dtls/{ns}Inf").text, "/BENEFRES/MX//01")
+        self.assertEqual(cdt.find(f"{ns}Purp/{ns}Cd").text, "CINV")
+        self.assertEqual(cdt.find(f"{ns}RmtInf/{ns}Ustrd").text, "Invoice TEST-001")
+        # InitgPty y orden RgltryRptg antes de Purp (según generador validado con HSBC)
+        tags = [c.tag.replace(ns, "") for c in cdt]
+        self.assertLess(tags.index("RgltryRptg"), tags.index("Purp"))
+        self.assertEqual(
+            tags,
+            ["PmtId", "Amt", "ChrgBr", "CdtrAgt", "Cdtr", "CdtrAcct", "RgltryRptg", "Purp", "RmtInf"],
+        )
+
+    def test_12_opi_generator_eur_iban(self):
+        """OPI a Bélgica en EUR: el IBAN va en CdtrAcct/Id/IBAN y ChrgBr CRED."""
+        pago = DummyOpiPayment(
+            amount=1.00, currency="EUR", chrgbr="CRED", purp="GDDS", reg="19",
+            partner=DummyOpiPartner("GHI SEMICONDUCTORS SA", "Avenue Brugmann 415", "1050", "Brussels", "BE"),
+            partner_bank=DummyOpiPartnerBank("BE30 0012 1637 1411", "GEBABEBB", acc_type="iban"),
+            ref="Invoice TEST-002",
+        )
+        xml_bytes = self.get_generator("OPI").generate(pago)
+        ns = "{urn:iso:std:iso:20022:tech:xsd:pain.001.001.03}"
+        root = ET.fromstring(xml_bytes)
+        cdt = root.find(f".//{ns}CdtTrfTxInf")
+        self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").attrib["Ccy"], "EUR")
+        self.assertEqual(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}IBAN").text, "BE30001216371411")
+        self.assertIsNone(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}Othr"))
+        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "CRED")
+        self.assertEqual(cdt.find(f"{ns}RgltryRptg/{ns}Dtls/{ns}Inf").text, "/BENEFRES/MX//19")
+
+    def test_13_opi_rechaza_datos_invalidos(self):
+        """El validador OPI debe rechazar MXN, beneficiario en MX, sin BIC y sin código postal."""
+        gen = self.get_generator("OPI")
+        casos = {
+            "moneda MXN": DummyOpiPayment(currency="MXN"),
+            "beneficiario en MX": DummyOpiPayment(partner=DummyOpiPartner(country="MX")),
+            "sin BIC": DummyOpiPayment(partner_bank=DummyOpiPartnerBank("0011223344", "")),
+            "BIC inválido": DummyOpiPayment(partner_bank=DummyOpiPartnerBank("0011223344", "XX")),
+            "sin código postal": DummyOpiPayment(partner=DummyOpiPartner(zip="")),
+            "ChrgBr inválido": DummyOpiPayment(chrgbr="XXXX"),
+            "regulatorio fuera de catálogo": DummyOpiPayment(reg="99"),
+            "ustrd > 140": DummyOpiPayment(ref="X" * 141),
+        }
+        for nombre, pago in casos.items():
+            with self.subTest(caso=nombre):
+                with self.assertRaises(Exception):
+                    gen.generate(pago)
+
+    def test_14_opi_normaliza_acentos_swift(self):
+        """Nombres con acentos/ñ se normalizan a ASCII para la red SWIFT."""
+        pago = DummyOpiPayment(partner=DummyOpiPartner("MUÑOZ & CIA S.A.", "Calle Peña 5", "28001", "Málaga", "ES"))
+        xml_bytes = self.get_generator("OPI").generate(pago)
+        self.assertIn(b"MUNOZ &amp; CIA S.A.", xml_bytes)
+        self.assertIn(b"Malaga", xml_bytes)
 
 
 if __name__ == "__main__":

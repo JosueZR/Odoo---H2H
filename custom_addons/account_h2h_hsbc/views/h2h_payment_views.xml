@@ -8,7 +8,7 @@
           3. Panel superior HSBC H2H con cuadros compactos interactivos (SPEI, SPID, Nómina, Servicios, etc.)
           4. Eliminación del campo deslizante / dropdown redundante
           5. Tabla de dispersión de nómina multi-empleado editable para Nómina HSBC
-          6. Campos complementarios para SPID (USD)
+          6. Campos complementarios para SPID (USD) y OPI (Cross Border)
           7. Adaptación visual de campos según el tipo de pago seleccionado
     -->
     <record id="view_account_payment_form_inherit_h2h" model="ir.ui.view">
@@ -203,14 +203,32 @@
                             </div>
                         </button>
 
-                        <!-- ── OPI (En desarrollo - Sin emojis) ── -->
-                        <div style="min-width:130px; max-width:145px; border:1px dashed #adb5bd; border-radius:6px; padding:6px 10px; text-align:center; background:#f8f9fa; opacity:0.65; cursor:not-allowed;">
-                            <div class="fw-bold text-muted" style="font-size:13px; line-height:1.2;">OPI</div>
-                            <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Orden de pago</div>
-                            <span style="font-size:9px; background:#6c757d; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
-                                En desarrollo
-                            </span>
-                        </div>
+                        <!-- ── OPI: Seleccionado ── -->
+                        <button name="action_select_h2h_opi"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code != 'OPI'">
+                            <div style="min-width:130px; max-width:145px; border:2px solid #714b67; border-radius:6px; padding:6px 10px; text-align:center; background:#f9f5fb; box-shadow:0 1px 3px rgba(113,75,103,0.15);">
+                                <div class="fw-bold" style="color:#714b67; font-size:13px; line-height:1.2;">OPI</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Pago internacional</div>
+                                <span style="font-size:9px; background:#714b67; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block; font-weight:600;">
+                                    Seleccionado
+                                </span>
+                            </div>
+                        </button>
+                        <!-- ── OPI: Disponible ── -->
+                        <button name="action_select_h2h_opi"
+                                type="object"
+                                class="btn p-0 text-start border-0 bg-transparent"
+                                invisible="h2h_method_code == 'OPI'">
+                            <div style="min-width:130px; max-width:145px; border:1px solid #ced4da; border-radius:6px; padding:6px 10px; text-align:center; background:#ffffff;">
+                                <div class="fw-bold text-dark" style="font-size:13px; line-height:1.2;">OPI</div>
+                                <div class="text-muted" style="font-size:10px; line-height:1.1; margin-top:2px;">Pago internacional</div>
+                                <span style="font-size:9px; background:#198754; color:#fff; border-radius:8px; padding:1px 6px; margin-top:4px; display:inline-block;">
+                                    Disponible
+                                </span>
+                            </div>
+                        </button>
 
                     </div>
 
@@ -279,6 +297,32 @@
                         <field name="h2h_spid_referencia_larga"
                                placeholder="Referencia al beneficiario (máximo 40 caracteres)"
                                readonly="h2h_state not in ('draft', 'method_selected')"/>
+                    </group>
+
+                    <!-- ── Datos requeridos para OPI (Cross Border, moneda extranjera) ── -->
+                    <group string="Datos requeridos para OPI (Pago internacional)"
+                           invisible="h2h_method_code != 'OPI'">
+                        <group>
+                            <field name="h2h_opi_chrgbr"
+                                   readonly="h2h_state not in ('draft', 'method_selected')"
+                                   required="h2h_method_code == 'OPI'"/>
+                            <field name="h2h_opi_purp_code"
+                                   readonly="h2h_state not in ('draft', 'method_selected')"
+                                   required="h2h_method_code == 'OPI'"/>
+                        </group>
+                        <group>
+                            <field name="h2h_opi_reg_code"
+                                   readonly="h2h_state not in ('draft', 'method_selected')"
+                                   required="h2h_method_code == 'OPI'"/>
+                            <field name="h2h_opi_referencia_larga"
+                                   placeholder="Ej. Invoice 1234 (máximo 140 caracteres)"
+                                   readonly="h2h_state not in ('draft', 'method_selected')"/>
+                        </group>
+                        <div class="text-muted small" colspan="2">
+                            El beneficiario debe tener calle, código postal, ciudad y país (fuera de México),
+                            y su cuenta bancaria debe estar ligada a un Banco con BIC/SWIFT.
+                            La moneda del pago debe ser distinta de MXN.
+                        </div>
                     </group>
 
                 </div>
