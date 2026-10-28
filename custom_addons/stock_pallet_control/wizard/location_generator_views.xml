@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pallet_location_generator_form" model="ir.ui.view">
+        <field name="name">stock.pallet.location.generator.form</field>
+        <field name="model">stock.pallet.location.generator</field>
+        <field name="arch" type="xml">
+            <form string="Generar ubicaciones para tarimas">
+                <group>
+                    <group string="Dónde">
+                        <field name="parent_id" options="{'no_create': True}"/>
+                        <field name="prefix" placeholder="A"/>
+                        <field name="storage_category_id" options="{'no_create': True}"/>
+                    </group>
+                    <group string="Cuántas">
+                        <label for="position_from" string="Posiciones"/>
+                        <div class="o_row">
+                            <field name="position_from"/> <span>a</span> <field name="position_to"/>
+                        </div>
+                        <label for="level_from" string="Niveles"/>
+                        <div class="o_row">
+                            <field name="level_from"/> <span>a</span> <field name="level_to"/>
+                        </div>
+                        <field name="preview"/>
+                    </group>
+                </group>
+                <div class="text-muted">
+                    Se crea un rack con el nombre indicado y dentro una ubicación por posición y nivel
+                    (por ejemplo A-01-1, A-01-2…). El nombre de cada ubicación es también su código de barras.
+                    Las que ya existen se omiten.
+                </div>
+                <footer>
+                    <button name="action_generate" type="object" string="Generar ubicaciones"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancelar" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pallet_location_generator" model="ir.actions.act_window">
+        <field name="name">Generar ubicaciones</field>
+        <field name="res_model">stock.pallet.location.generator</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_pallet_root" name="Tarimas" parent="stock.menu_stock_root"
+              sequence="3" groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_pallet_receive" name="Recibir tarimas" parent="menu_pallet_root"
+              action="action_pallet_receive" sequence="10"/>
+    <menuitem id="menu_pallet_scan" name="Escáner (salida / cambio de ubicación)" parent="menu_pallet_root"
+              action="action_pallet_scan" sequence="20"/>
+    <menuitem id="menu_pallet_packages" name="Tarimas" parent="menu_pallet_root"
+              action="action_pallet_packages" sequence="30"/>
+    <menuitem id="menu_pallet_locations" name="Mapa de ubicaciones" parent="menu_pallet_root"
+              action="action_pallet_locations" sequence="40"/>
+    <menuitem id="menu_pallet_location_generator" name="Generar ubicaciones" parent="menu_pallet_root"
+              action="action_pallet_location_generator" sequence="50" groups="stock.group_stock_manager"/>
+</odoo>

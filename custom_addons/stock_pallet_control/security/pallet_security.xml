@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Activa lo mismo que Inventario > Configuración > Ajustes:
+         Ubicaciones de almacenamiento (incluye categorías y reglas), Paquetes y Propietario. -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[
+            (4, ref('stock.group_stock_multi_locations')),
+            (4, ref('stock.group_tracking_lot')),
+            (4, ref('stock.group_tracking_owner')),
+        ]"/>
+    </record>
+</odoo>

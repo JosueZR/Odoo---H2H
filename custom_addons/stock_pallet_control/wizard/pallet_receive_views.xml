@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pallet_receive_form" model="ir.ui.view">
+        <field name="name">stock.pallet.receive.form</field>
+        <field name="model">stock.pallet.receive</field>
+        <field name="arch" type="xml">
+            <form string="Recibir tarimas" create="false" delete="false">
+                <field name="state" invisible="1"/>
+                <header>
+                    <button name="action_confirm" string="Registrar entrada" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_print_labels" string="Imprimir etiquetas" type="object"
+                            class="btn-primary" invisible="state != 'done'"/>
+                    <button name="action_open_picking" string="Ver recepción" type="object"
+                            invisible="state != 'done'"/>
+                    <button name="action_new" string="Recibir otra" type="object"
+                            invisible="state != 'done'"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-success" role="status" invisible="state != 'done'">
+                        Entrada registrada en la recepción <field name="picking_id" readonly="1" class="oe_inline fw-bold"/>.
+                        Imprime las etiquetas y pega una en cada tarima.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not note">
+                        <field name="note" readonly="1" class="oe_inline"/>
+                    </div>
+                    <group invisible="state == 'done'">
+                        <group string="Mercancía que llega">
+                            <field name="warehouse_id" options="{'no_create': True}"
+                                   groups="stock.group_stock_multi_warehouses"/>
+                            <field name="owner_id" options="{'no_create': True}"/>
+                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="origin"/>
+                        </group>
+                        <group string="Tarimas">
+                            <field name="package_type_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="pallet_count"/>
+                            <field name="location_dest_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <separator string="Contenido de cada tarima" invisible="state == 'done'"/>
+                    <field name="line_ids" invisible="state == 'done'">
+                        <list editable="bottom">
+                            <field name="tracking" column_invisible="True"/>
+                            <field name="product_id" options="{'no_create': True}"/>
+                            <field name="lot_name" readonly="tracking != 'lot'" required="tracking == 'lot'"/>
+                            <field name="quantity"/>
+                            <field name="product_uom_name" string="Unidad"/>
+                        </list>
+                    </field>
+                    <separator string="Tarimas registradas" invisible="state != 'done'"/>
+                    <field name="package_ids" invisible="state != 'done'" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="location_id"/>
+                            <field name="owner_id"/>
+                            <field name="pallet_content"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pallet_receive" model="ir.actions.act_window">
+        <field name="name">Recibir tarimas</field>
+        <field name="res_model">stock.pallet.receive</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>
