@@ -50,3 +50,7 @@ package.json
 /man/
 /share/
 /src/
+
+odoo.conf
+requirements-local.txt
+venv/

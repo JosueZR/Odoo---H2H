@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Tipo de paquete "Tarima" -->
+        <record id="package_type_tarima" model="stock.package.type">
+            <field name="name">Tarima</field>
+            <field name="barcode">TARIMA</field>
+        </record>
+
+        <!-- Categoría de almacenamiento: 1 tarima por ubicación.
+             El peso máximo es alto a propósito: con 0 Odoo rechaza cualquier tarima que pese algo.
+             Ajústalo al límite real de tus racks si quieres que Odoo también lo controle. -->
+        <record id="storage_category_tarima" model="stock.storage.category">
+            <field name="name">Tarima (1 por ubicación)</field>
+            <field name="allow_new_product">mixed</field>
+            <field name="max_weight">100000</field>
+        </record>
+
+        <record id="storage_category_tarima_capacity" model="stock.storage.category.capacity">
+            <field name="storage_category_id" ref="storage_category_tarima"/>
+            <field name="package_type_id" ref="package_type_tarima"/>
+            <field name="quantity">1</field>
+        </record>
+
+        <!-- Regla de ubicación: toda tarima que llega a WH/Stock se guarda en la primera
+             ubicación libre con la categoría "Tarima". -->
+        <record id="putaway_rule_tarima" model="stock.putaway.rule">
+            <field name="location_in_id" ref="stock.stock_location_stock"/>
+            <field name="location_out_id" ref="stock.stock_location_stock"/>
+            <field name="package_type_ids" eval="[(4, ref('package_type_tarima'))]"/>
+            <field name="sublocation">closest_location</field>
+            <field name="storage_category_id" ref="storage_category_tarima"/>
+        </record>
+    </data>
+</odoo>

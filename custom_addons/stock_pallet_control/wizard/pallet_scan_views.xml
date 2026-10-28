@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pallet_scan_form" model="ir.ui.view">
+        <field name="name">stock.pallet.scan.form</field>
+        <field name="model">stock.pallet.scan</field>
+        <field name="arch" type="xml">
+            <form string="Escáner de tarimas" create="false" delete="false">
+                <field name="state" invisible="1"/>
+                <field name="last_scan_ok" invisible="1"/>
+                <!-- Recibe lo que dispara el lector de código de barras en cualquier parte de la pantalla -->
+                <field name="_barcode_scanned" widget="barcode_handler"/>
+                <header>
+                    <button name="action_confirm" type="object" class="btn-primary"
+                            string="Confirmar salida" invisible="state != 'draft' or mode != 'exit'"/>
+                    <button name="action_confirm" type="object" class="btn-primary"
+                            string="Confirmar cambio de ubicación" invisible="state != 'draft' or mode != 'move'"/>
+                    <button name="action_clear" type="object" string="Vaciar lista"
+                            invisible="state != 'draft'"/>
+                    <button name="action_new" type="object" class="btn-primary"
+                            string="Nuevo escaneo" invisible="state != 'done'"/>
+                    <!-- Botones (no un campo de entrada): así el lector sigue funcionando después de elegir -->
+                    <field name="mode" widget="statusbar" statusbar_visible="exit,move"
+                           options="{'clickable': '1'}" readonly="state == 'done'"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-success" role="status" invisible="state != 'done'">
+                        Operación registrada. Las tarimas ya salieron o cambiaron de ubicación en Odoo.
+                    </div>
+                    <div class="text-muted mb-2" invisible="state == 'done'">
+                        Elige arriba la operación y escanea la etiqueta de cada tarima.
+                        <span invisible="mode != 'move'">Después escanea la etiqueta de la ubicación destino.</span>
+                        Sin lector, escribe el código abajo y presiona Enter. Si llenas Cliente o Referencia,
+                        haz clic fuera de esos campos antes de seguir escaneando.
+                    </div>
+                    <div class="alert alert-success py-2" role="status"
+                         invisible="not last_scan or not last_scan_ok or state == 'done'">
+                        <field name="last_scan" readonly="1" class="oe_inline"/>
+                    </div>
+                    <div class="alert alert-danger py-2" role="alert"
+                         invisible="not last_scan or last_scan_ok or state == 'done'">
+                        <field name="last_scan" readonly="1" class="oe_inline"/>
+                    </div>
+                    <group invisible="state == 'done'">
+                        <group>
+                            <field name="scan_input" string="Escribir código"
+                                   placeholder="Código de la tarima o ubicación"/>
+                            <field name="location_dest_id" invisible="mode != 'move'"
+                                   options="{'no_create': True}"/>
+                            <field name="partner_id" invisible="mode != 'exit'"
+                                   options="{'no_create': True}"/>
+                            <field name="origin" invisible="mode != 'exit'"/>
+                        </group>
+                    </group>
+                    <separator string="Tarimas escaneadas"/>
+                    <field name="package_ids" readonly="state == 'done'">
+                        <list create="false">
+                            <field name="name"/>
+                            <field name="location_id"/>
+                            <field name="owner_id"/>
+                            <field name="pallet_content"/>
+                        </list>
+                    </field>
+                    <separator string="Operaciones generadas" invisible="state != 'done'"/>
+                    <field name="picking_ids" invisible="state != 'done'" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="picking_type_id"/>
+                            <field name="location_id"/>
+                            <field name="location_dest_id"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pallet_scan" model="ir.actions.act_window">
+        <field name="name">Escáner de tarimas</field>
+        <field name="res_model">stock.pallet.scan</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

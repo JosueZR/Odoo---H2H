@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Papel: etiqueta 4 x 6 pulgadas (102 x 152 mm), vertical -->
+    <record id="paperformat_pallet_label" model="report.paperformat">
+        <field name="name">Etiqueta de tarima 4x6</field>
+        <field name="default" eval="False"/>
+        <field name="format">custom</field>
+        <field name="page_width">102</field>
+        <field name="page_height">152</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">3</field>
+        <field name="margin_bottom">3</field>
+        <field name="margin_left">3</field>
+        <field name="margin_right">3</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_pallet_label" model="ir.actions.report">
+        <field name="name">Etiqueta de tarima (4x6)</field>
+        <field name="model">stock.quant.package</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_pallet_control.report_pallet_label</field>
+        <field name="report_file">stock_pallet_control.report_pallet_label</field>
+        <field name="paperformat_id" ref="paperformat_pallet_label"/>
+        <field name="print_report_name">'Etiqueta tarima - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="stock.model_stock_quant_package"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_pallet_label">
+        <t t-call="web.basic_layout">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="quants" t-value="o.quant_ids.filtered(lambda q: q.quantity)"/>
+                <div class="page" style="page-break-after: always; color: #000; font-family: Arial, Helvetica, sans-serif;">
+                    <div style="border: 2px solid #000; padding: 4mm; height: 140mm;">
+                        <!-- Código de barras: lo único que Odoo necesita leer -->
+                        <div style="text-align: center;">
+                            <span t-out="o.name"
+                                  t-options="{'widget': 'barcode', 'symbology': 'Code128', 'width': 800, 'height': 200, 'img_style': 'width: 88mm; height: 28mm;'}"/>
+                        </div>
+                        <div style="text-align: center; font-size: 30px; font-weight: bold; letter-spacing: 1px; margin-top: 1mm;">
+                            <span t-field="o.name"/>
+                        </div>
+
+                        <hr style="border-top: 2px solid #000; margin: 3mm 0;"/>
+
+                        <table style="width: 100%; font-size: 15px;">
+                            <tr t-if="o.owner_id">
+                                <td style="width: 32%; font-weight: bold; vertical-align: top;">Propietario</td>
+                                <td style="font-size: 18px; font-weight: bold;"><span t-out="o.owner_id.display_name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold;">Entrada</td>
+                                <td><span t-field="o.pack_date"/></td>
+                            </tr>
+                            <tr t-if="o.location_id">
+                                <td style="font-weight: bold;">Ubicación</td>
+                                <td><span t-out="o.location_id.display_name"/></td>
+                            </tr>
+                            <tr t-if="o.package_type_id">
+                                <td style="font-weight: bold;">Tipo</td>
+                                <td><span t-field="o.package_type_id.name"/></td>
+                            </tr>
+                        </table>
+
+                        <hr style="border-top: 2px solid #000; margin: 3mm 0;"/>
+
+                        <div style="font-weight: bold; font-size: 15px; margin-bottom: 1mm;">Contenido</div>
+                        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                            <t t-foreach="quants[:8]" t-as="quant">
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="padding: 1mm 0;">
+                                        <span t-out="quant.product_id.display_name"/>
+                                        <t t-if="quant.lot_id">
+                                            <br/><span style="font-size: 12px;">Lote: <span t-out="quant.lot_id.name"/></span>
+                                        </t>
+                                    </td>
+                                    <td style="text-align: right; white-space: nowrap; font-weight: bold; padding-left: 2mm;">
+                                        <span t-out="'%g' % quant.quantity"/> <span t-out="quant.product_id.uom_id.name"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
+                        <div t-if="len(quants) > 8" style="font-size: 12px; margin-top: 1mm;">
+                            … y <span t-out="len(quants) - 8"/> producto(s) más.
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

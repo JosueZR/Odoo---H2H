@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pallet_receive_user,stock.pallet.receive user,model_stock_pallet_receive,stock.group_stock_user,1,1,1,1
+access_pallet_receive_line_user,stock.pallet.receive.line user,model_stock_pallet_receive_line,stock.group_stock_user,1,1,1,1
+access_pallet_scan_user,stock.pallet.scan user,model_stock_pallet_scan,stock.group_stock_user,1,1,1,1
+access_pallet_location_generator_manager,stock.pallet.location.generator manager,model_stock_pallet_location_generator,stock.group_stock_manager,1,1,1,1

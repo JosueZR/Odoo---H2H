@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pallet_package_list" model="ir.ui.view">
+        <field name="name">stock.quant.package.pallet.list</field>
+        <field name="model">stock.quant.package</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list string="Tarimas" create="false">
+                <field name="name"/>
+                <field name="package_type_id" optional="hide"/>
+                <field name="location_id"/>
+                <field name="owner_id"/>
+                <field name="pallet_content"/>
+                <field name="pack_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pallet_package_search" model="ir.ui.view">
+        <field name="name">stock.quant.package.pallet.search</field>
+        <field name="model">stock.quant.package</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Tarimas">
+                <field name="name" string="Tarima"/>
+                <field name="owner_id" string="Propietario"/>
+                <field name="location_id"/>
+                <field name="package_type_id"/>
+                <filter name="in_warehouse" string="En almacén"
+                        domain="[('location_id.usage', '=', 'internal')]"/>
+                <filter name="gone" string="Ya salieron"
+                        domain="[('location_id.usage', '!=', 'internal')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_location" string="Ubicación" context="{'group_by': 'location_id'}"/>
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'package_type_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pallet_packages" model="ir.actions.act_window">
+        <field name="name">Tarimas</field>
+        <field name="res_model">stock.quant.package</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pallet_package_search"/>
+        <field name="context">{'search_default_in_warehouse': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pallet_package_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_quant_package_form')})]"/>
+    </record>
+
+    <!-- Botón para imprimir la etiqueta desde la ficha de la tarima -->
+    <record id="view_quant_package_form_pallet_label" model="ir.ui.view">
+        <field name="name">stock.quant.package.form.pallet.label</field>
+        <field name="model">stock.quant.package</field>
+        <field name="inherit_id" ref="stock.view_quant_package_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_pallet_label" string="Imprimir etiqueta de tarima" type="object"
+                        class="btn-primary"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
