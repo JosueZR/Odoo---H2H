@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── Acción cliente que carga el dashboard OWL ──────────────────── -->
+    <record id="action_inventory_dashboard" model="ir.actions.client">
+        <field name="name">Centro de operaciones</field>
+        <field name="tag">stock_pallet_control.inventory_dashboard</field>
+    </record>
+
+    <!-- ── Menú principal: primer acceso en Inventario ────────────────── -->
+    <menuitem
+        id="menu_inventory_dashboard"
+        name="Centro de operaciones"
+        parent="stock.menu_stock_root"
+        action="action_inventory_dashboard"
+        sequence="1"
+        groups="stock.group_stock_user"/>
+
+</odoo>

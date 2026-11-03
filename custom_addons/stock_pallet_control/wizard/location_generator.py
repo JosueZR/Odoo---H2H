@@ -10,6 +10,9 @@ class PalletLocationGenerator(models.TransientModel):
     _description = 'Generar ubicaciones para tarimas'
 
     def _default_parent(self):
+        wh = self.env['stock.warehouse'].search([('company_id', '=', self.env.company.id)], limit=1)
+        if wh and wh.lot_stock_id:
+            return wh.lot_stock_id
         return self.env.ref('stock.stock_location_stock', raise_if_not_found=False)
 
     def _default_category(self):
@@ -63,19 +66,25 @@ class PalletLocationGenerator(models.TransientModel):
         # Un rack (ubicación de tipo "vista", no guarda mercancía) agrupa sus posiciones.
         rack = Location.search([
             ('name', '=', self.prefix.strip()), ('location_id', '=', self.parent_id.id)], limit=1)
+        company_id = self.parent_id.company_id.id or self.env.company.id
         if not rack:
             rack = Location.create({
                 'name': self.prefix.strip(),
                 'location_id': self.parent_id.id,
                 'usage': 'view',
+                'company_id': company_id,
             })
         created = Location.create([{
             'name': name,
             'barcode': name,
             'location_id': rack.id,
             'usage': 'internal',
+            'company_id': company_id,
             'storage_category_id': self.storage_category_id.id or False,
         } for name in to_create])
+        if created:
+            self.env.flush_all()
+            created._compute_warehouse_id()
         action = self.env['ir.actions.act_window']._for_xml_id(
             'stock_pallet_control.action_pallet_locations')
         action['domain'] = [('id', 'in', created.ids)] if created else [('id', '=', False)]

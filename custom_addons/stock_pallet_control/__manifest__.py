@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Control de tarimas: etiquetas, escaneo y ubicaciones',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.9.0',
     'category': 'Inventory/Inventory',
     'summary': 'Registra cada tarima como paquete con etiqueta de código de barras, '
                'entrada y salida por escaneo, propietario y mapa de ubicaciones libres/ocupadas.',
@@ -9,6 +9,7 @@
 Control de tarimas sobre Inventario (Odoo 18 Community)
 =======================================================
 
+* Dashboard visual de operaciones de almacén.
 * Cada tarima es un paquete de Odoo; la etiqueta solo lleva el código del paquete.
 * Recepción de tarimas: crea el paquete, la recepción validada, asigna ubicación libre
   automáticamente (reglas de ubicación + categoría de almacenamiento) e imprime la etiqueta 4x6.
@@ -30,8 +31,18 @@ Control de tarimas sobre Inventario (Odoo 18 Community)
         'wizard/location_generator_views.xml',
         'views/stock_location_views.xml',
         'views/stock_quant_package_views.xml',
+        'views/stock_picking_pallet_views.xml',
+        'views/dashboard_views.xml',
         'views/pallet_menus.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'stock_pallet_control/static/src/dashboard/dashboard.scss',
+            'stock_pallet_control/static/src/dashboard/dashboard.xml',
+            'stock_pallet_control/static/src/dashboard/dashboard.js',
+        ],
+    },
     'installable': True,
     'application': False,
 }
+

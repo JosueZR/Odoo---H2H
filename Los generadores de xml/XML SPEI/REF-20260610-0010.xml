@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <CstmrCdtTrfInitn>
+        <GrpHdr>
+            <MsgId>Referencia-4</MsgId>
+            <CreDtTm>2026-06-10T09:02:28</CreDtTm>
+            <NbOfTxs>1</NbOfTxs>
+            <CtrlSum>0.1</CtrlSum>
+            <InitgPty>
+                <Id>
+                    <OrgId>
+                        <Othr>
+                            <Id>PC000032364</Id>
+                        </Othr>
+                    </OrgId>
+                </Id>
+            </InitgPty>
+        </GrpHdr>
+        <PmtInf>
+            <PmtInfId>PAYMENT123</PmtInfId>
+            <PmtMtd>TRF</PmtMtd>
+            <PmtTpInf>
+                <SvcLvl>
+                    <Cd>URGP</Cd>
+                </SvcLvl>
+            </PmtTpInf>
+            <ReqdExctnDt>2026-06-10</ReqdExctnDt>
+            <Dbtr>
+                <Nm>MI EMPRESA SA DE CV</Nm>
+                <PstlAdr>
+                    <StrtNm>Av Principal 123</StrtNm>
+                    <PstCd>81200</PstCd>
+                    <TwnNm>Los Mochis</TwnNm>
+                    <Ctry>MX</Ctry>
+                </PstlAdr>
+            </Dbtr>
+            <DbtrAcct>
+                <Id>
+                    <Othr>
+                        <Id>4043001353</Id>
+                    </Othr>
+                </Id>
+            </DbtrAcct>
+            <DbtrAgt>
+                <FinInstnId>
+                    <BIC>BIMEMXMM</BIC>
+                    <PstlAdr>
+                        <Ctry>MX</Ctry>
+                    </PstlAdr>
+                </FinInstnId>
+            </DbtrAgt>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <InstrId>REF-20260610-0009</InstrId>
+                    <EndToEndId>REF-20260610-0009</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt Ccy="MXN">0.1</InstdAmt>
+                </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <ClrSysMmbId>
+                            <MmbId>021</MmbId>
+                        </ClrSysMmbId>
+                        <PstlAdr>
+                            <Ctry>MX</Ctry>
+                        </PstlAdr>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>JUAN PEREZ</Nm>
+                    <PstlAdr>
+                        <StrtNm>Calle Norte 45</StrtNm>
+                        <PstCd>01000</PstCd>
+                        <TwnNm>CDMX</TwnNm>
+                        <Ctry>MX</Ctry>
+                    </PstlAdr>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <Othr>
+                            <Id>123456789012345678</Id>
+                        </Othr>
+                    </Id>
+                </CdtrAcct>
+            </CdtTrfTxInf>
+        </PmtInf>
+    </CstmrCdtTrfInitn>
+</Document>

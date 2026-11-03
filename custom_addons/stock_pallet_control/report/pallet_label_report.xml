@@ -8,10 +8,10 @@
         <field name="page_width">102</field>
         <field name="page_height">152</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">3</field>
-        <field name="margin_bottom">3</field>
-        <field name="margin_left">3</field>
-        <field name="margin_right">3</field>
+        <field name="margin_top">1</field>
+        <field name="margin_bottom">1</field>
+        <field name="margin_left">1</field>
+        <field name="margin_right">1</field>
         <field name="header_line" eval="False"/>
         <field name="header_spacing">0</field>
         <field name="dpi">96</field>
@@ -33,60 +33,139 @@
         <t t-call="web.basic_layout">
             <t t-foreach="docs" t-as="o">
                 <t t-set="quants" t-value="o.quant_ids.filtered(lambda q: q.quantity)"/>
-                <div class="page" style="page-break-after: always; color: #000; font-family: Arial, Helvetica, sans-serif;">
-                    <div style="border: 2px solid #000; padding: 4mm; height: 140mm;">
-                        <!-- Código de barras: lo único que Odoo necesita leer -->
-                        <div style="text-align: center;">
+                <t t-set="total_qty" t-value="sum(q.quantity for q in quants)"/>
+
+                <div class="page" style="
+                    page-break-after: always;
+                    font-family: Arial, Helvetica, sans-serif;
+                    color: #1a1a1a;
+                    width: 100mm;
+                    height: 150mm;
+                    margin: 0 auto;
+                    box-sizing: border-box;
+                    border: 2.5px solid #714B67;
+                    border-radius: 5px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    background-color: #fff;
+                    overflow: hidden;
+                ">
+                    <!-- CABECERA -->
+                    <div style="
+                        background-color: #714B67;
+                        color: #fff;
+                        padding: 3.5mm 5mm;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">
+                            Giconsa
+                        </div>
+                        <div t-if="o.pallet_total and o.pallet_total > 1" style="
+                            background-color: #fff;
+                            color: #714B67;
+                            font-size: 13px;
+                            font-weight: bold;
+                            border-radius: 12px;
+                            padding: 1.5mm 4.5mm;
+                        ">
+                            Tarima <t t-out="o.pallet_index"/> / <t t-out="o.pallet_total"/>
+                        </div>
+                        <div t-else="" style="font-size: 12px; opacity: 0.9; font-weight: bold; letter-spacing: 1px;">
+                            TARIMA
+                        </div>
+                    </div>
+
+                    <!-- CODIGO DE BARRAS CENTRADO Y GRANDE -->
+                    <div style="
+                        text-align: center;
+                        padding: 3.5mm 2mm 2.5mm 2mm;
+                        border-bottom: 2px solid #eee;
+                    ">
+                        <div style="display: inline-block; margin: 0 auto;">
                             <span t-out="o.name"
-                                  t-options="{'widget': 'barcode', 'symbology': 'Code128', 'width': 800, 'height': 200, 'img_style': 'width: 88mm; height: 28mm;'}"/>
+                                  t-options="{'widget': 'barcode', 'symbology': 'Code128', 'width': 650, 'height': 180, 'img_style': 'width: 88mm; height: 25mm; margin: 0 auto;'}"/>
                         </div>
-                        <div style="text-align: center; font-size: 30px; font-weight: bold; letter-spacing: 1px; margin-top: 1mm;">
-                            <span t-field="o.name"/>
+                        <div style="font-size: 24px; font-weight: bold; letter-spacing: 5px; margin-top: 1.5mm; color: #714B67;">
+                            <t t-out="o.name"/>
                         </div>
+                    </div>
 
-                        <hr style="border-top: 2px solid #000; margin: 3mm 0;"/>
-
-                        <table style="width: 100%; font-size: 15px;">
+                    <!-- DATOS GENERALES -->
+                    <div style="padding: 3mm 5mm; border-bottom: 2px solid #eee; background-color: #faf7f9;">
+                        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
                             <tr t-if="o.owner_id">
-                                <td style="width: 32%; font-weight: bold; vertical-align: top;">Propietario</td>
-                                <td style="font-size: 18px; font-weight: bold;"><span t-out="o.owner_id.display_name"/></td>
+                                <td style="font-weight: bold; color: #714B67; width: 30%; padding: 1.2mm 0; vertical-align: middle;">Propietario</td>
+                                <td style="font-weight: bold; font-size: 15px; padding: 1.2mm 0;">
+                                    <t t-out="o.owner_id.display_name"/>
+                                </td>
+                            </tr>
+                            <tr t-if="o.pallet_origin">
+                                <td style="font-weight: bold; color: #714B67; padding: 1.2mm 0; vertical-align: middle;">Referencia</td>
+                                <td style="font-size: 13px; font-weight: 500; padding: 1.2mm 0;"><t t-out="o.pallet_origin"/></td>
                             </tr>
                             <tr>
-                                <td style="font-weight: bold;">Entrada</td>
-                                <td><span t-field="o.pack_date"/></td>
+                                <td style="font-weight: bold; color: #714B67; padding: 1.2mm 0; vertical-align: middle;">Fecha</td>
+                                <td style="padding: 1.2mm 0;"><span t-field="o.pack_date"/></td>
                             </tr>
                             <tr t-if="o.location_id">
-                                <td style="font-weight: bold;">Ubicación</td>
-                                <td><span t-out="o.location_id.display_name"/></td>
-                            </tr>
-                            <tr t-if="o.package_type_id">
-                                <td style="font-weight: bold;">Tipo</td>
-                                <td><span t-field="o.package_type_id.name"/></td>
+                                <td style="font-weight: bold; color: #714B67; padding: 1.2mm 0; vertical-align: middle;">Ubicación</td>
+                                <td style="font-size: 15px; font-weight: bold; padding: 1.2mm 0; color: #222;">
+                                    <t t-out="o.location_id.display_name"/>
+                                </td>
                             </tr>
                         </table>
+                    </div>
 
-                        <hr style="border-top: 2px solid #000; margin: 3mm 0;"/>
-
-                        <div style="font-weight: bold; font-size: 15px; margin-bottom: 1mm;">Contenido</div>
-                        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
-                            <t t-foreach="quants[:8]" t-as="quant">
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="padding: 1mm 0;">
-                                        <span t-out="quant.product_id.display_name"/>
-                                        <t t-if="quant.lot_id">
-                                            <br/><span style="font-size: 12px;">Lote: <span t-out="quant.lot_id.name"/></span>
-                                        </t>
+                    <!-- CONTENIDO BIEN DISTRIBUIDO -->
+                    <div style="padding: 3.5mm 5mm; flex-grow: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #714B67; margin-bottom: 2.5mm; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1.5px solid #714B67; padding-bottom: 1mm;">
+                            Contenido del pallet
+                        </div>
+                        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                            <t t-foreach="quants[:6]" t-as="quant">
+                                <tr style="border-bottom: 1px solid #eee;">
+                                    <td style="padding: 1.8mm 0; vertical-align: middle;">
+                                        <div style="font-weight: bold; font-size: 13px; line-height: 1.2;">
+                                            <t t-out="quant.product_id.display_name"/>
+                                        </div>
+                                        <div t-if="quant.lot_id" style="font-size: 11px; color: #777;">
+                                            Lote: <t t-out="quant.lot_id.name"/>
+                                        </div>
                                     </td>
-                                    <td style="text-align: right; white-space: nowrap; font-weight: bold; padding-left: 2mm;">
-                                        <span t-out="'%g' % quant.quantity"/> <span t-out="quant.product_id.uom_id.name"/>
+                                    <td style="text-align: right; white-space: nowrap; vertical-align: middle; padding-left: 2mm;">
+                                        <span style="font-size: 17px; font-weight: bold; color: #111;"><t t-out="'%g' % quant.quantity"/></span>
+                                        <span style="font-size: 12px; color: #555;"> <t t-out="quant.product_id.uom_id.name"/></span>
                                     </td>
                                 </tr>
                             </t>
                         </table>
-                        <div t-if="len(quants) > 8" style="font-size: 12px; margin-top: 1mm;">
-                            … y <span t-out="len(quants) - 8"/> producto(s) más.
+                        <div t-if="len(quants) > 6" style="font-size: 11px; color: #888; margin-top: 2mm; font-style: italic;">
+                            + <t t-out="len(quants) - 6"/> producto(s) más en este pallet
                         </div>
                     </div>
+
+                    <!-- PIE DE PAGINA -->
+                    <div style="
+                        background-color: #f3ecf2;
+                        border-top: 2px solid #714B67;
+                        padding: 3.5mm 5mm;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div style="font-size: 13px;">
+                            <span style="font-weight: bold; color: #714B67;">TOTAL: </span>
+                            <span style="font-size: 18px; font-weight: bold; color: #111;"><t t-out="'%g' % total_qty"/></span>
+                            <span style="font-size: 12px; color: #555;"> piezas</span>
+                        </div>
+                        <div t-if="o.package_type_id" style="font-size: 12px; color: #714B67; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <t t-out="o.package_type_id.name"/>
+                        </div>
+                    </div>
+
                 </div>
             </t>
         </t>
