@@ -104,6 +104,22 @@ class PalletScan(models.TransientModel):
                     'La ubicación %(location)s no tiene espacio: capacidad %(cap)g, ocupada por %(occ)s.',
                     location=destination.display_name, cap=capacity.quantity, occ=occupied))
 
+    def _get_location_warehouse(self, location):
+        """Determina el almacén al que pertenece una ubicación, incluso si está en subniveles."""
+        if not location:
+            return self.env['stock.warehouse']
+        if location.warehouse_id:
+            return location.warehouse_id
+        # Buscar hacia arriba en la jerarquía de ubicaciones
+        curr = location.location_id
+        while curr:
+            if curr.warehouse_id:
+                return curr.warehouse_id
+            curr = curr.location_id
+        # Fallback al almacén de la compañía
+        company_id = location.company_id.id or self.env.company.id
+        return self.env['stock.warehouse'].search([('company_id', '=', company_id)], limit=1)
+
     def _groups(self):
         groups = defaultdict(lambda: self.env['stock.quant.package'])
         for package in self.package_ids:
@@ -116,7 +132,7 @@ class PalletScan(models.TransientModel):
                 raise UserError(_(
                     'La tarima %s mezcla mercancía de varios propietarios; sepárala antes de moverla.',
                     package.name))
-            warehouse = package.location_id.warehouse_id
+            warehouse = self._get_location_warehouse(package.location_id)
             if not warehouse:
                 raise UserError(_('No se pudo determinar el almacén de la tarima %s.', package.name))
             groups[(warehouse, owners[:1])] |= package
@@ -154,7 +170,7 @@ class PalletScan(models.TransientModel):
                 'operación pendiente.', ', '.join(unavailable.package_id.mapped('name'))))
         picking.package_level_ids.write({'is_done': True})
         result = picking.with_context(skip_sms=True, skip_backorder=True).button_validate()
-        if result is not True:
+        if result is not True and picking.state != 'done':
             raise UserError(_(
                 'Odoo no pudo validar %s automáticamente. Ábrela y revísala.', picking.name))
         return picking
@@ -169,8 +185,10 @@ class PalletScan(models.TransientModel):
             self._check_destination_capacity(self.package_ids, self.location_dest_id)
         pickings = self.env['stock.picking']
         for (warehouse, owner), packages in self._groups().items():
-            if self.mode == 'move' and self.location_dest_id.warehouse_id != warehouse:
-                raise UserError(_('La ubicación destino pertenece a otro almacén.'))
+            if self.mode == 'move':
+                dest_warehouse = self._get_location_warehouse(self.location_dest_id)
+                if dest_warehouse and dest_warehouse != warehouse:
+                    raise UserError(_('La ubicación destino pertenece a otro almacén.'))
             pickings |= self._create_picking(warehouse, owner, packages)
         self.write({
             'state': 'done',

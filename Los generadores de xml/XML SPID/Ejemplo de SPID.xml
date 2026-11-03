@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <CstmrCdtTrfInitn>
+        <GrpHdr>
+            <MsgId>REF TEST INTER UNI005</MsgId>
+            <CreDtTm>2015-11-11T10:10:37</CreDtTm>
+            <NbOfTxs>2</NbOfTxs>
+            <CtrlSum>0.03</CtrlSum>
+            <InitgPty>
+                <Id>
+                    <OrgId>
+                        <Othr>
+                            <Id>ABC99999999</Id>
+                        </Othr>
+                    </OrgId>
+                </Id>
+            </InitgPty>
+        </GrpHdr>
+        <PmtInf>
+            <PmtInfId>Referencia de Pago</PmtInfId>
+            <PmtMtd>TRF</PmtMtd>
+            <PmtTpInf>
+                <SvcLvl>
+                    <Cd>URGP</Cd>
+                </SvcLvl>
+            </PmtTpInf>
+            <ReqdExctnDt>2015-11-11</ReqdExctnDt>
+            <Dbtr>
+                <Nm>NOMBRE EMPRESA</Nm>
+                <PstlAdr>
+                    <StrtNm>Calle y Numero</StrtNm>
+                    <PstCd>Codigo Postal</PstCd>
+                    <TwnNm>Colonia</TwnNm>
+                    <Ctry>MX</Ctry>
+                    <AdrLine>Ciudad</AdrLine>
+                </PstlAdr>
+            </Dbtr>
+            <DbtrAcct>
+                <Id>
+                    <Othr>
+                        <Id>7077777777</Id>
+                    </Othr>
+                </Id>
+            </DbtrAcct>
+            <DbtrAgt>
+                <FinInstnId>
+                    <BIC>BIMEMXMM</BIC>
+                    <PstlAdr>
+                        <Ctry>MX</Ctry>
+                    </PstlAdr>
+                </FinInstnId>
+            </DbtrAgt>  
+            <CdtTrfTxInf> //checar de aqui en adelante
+                <PmtId>
+                    <InstrId>ABC456789012345</InstrId>
+                    <EndToEndId>123456789012345</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt Ccy="USD">0.01</InstdAmt> 
+                </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <ClrSysMmbId>
+                            <MmbId>014</MmbId>
+                        </ClrSysMmbId>
+                        <PstlAdr>
+                            <Ctry>MX</Ctry>
+                        </PstlAdr>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>NOMBRE BENEFICIARIO 01</Nm>
+                    <PstlAdr>
+                        <StrtNm>Calle y Numero</StrtNm>
+                        <PstCd>Codigo Postal</PstCd>
+                        <TwnNm>Pueblo / Condado</TwnNm>
+                        <Ctry>MX</Ctry>
+                        <AdrLine>Ciudad</AdrLine>
+                    </PstlAdr>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <Othr>
+                            <Id>014180062472999999</Id>
+                        </Othr>
+                    </Id>
+                </CdtrAcct>
+                <RgltryRptg>
+                    <Dtls>
+                        <Inf>/SPID/OC/08</Inf>
+                    </Dtls>
+                </RgltryRptg>
+                <Tax>
+                    <Cdtr>
+                        <TaxId>RFC123456789</TaxId>
+                    </Cdtr>
+                </Tax>
+                <RmtInf>
+                    <Ustrd>Referencia Alf 001</Ustrd>
+                </RmtInf>   
+            </CdtTrfTxInf>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <InstrId>ABC456789012345</InstrId>
+                    <EndToEndId>123456789012345</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt Ccy="USD">0.02</InstdAmt>
+                </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <ClrSysMmbId>
+                            <MmbId>012</MmbId>
+                        </ClrSysMmbId>
+                        <PstlAdr>
+                            <Ctry>MX</Ctry>
+                        </PstlAdr>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>NOMBRE BENEFICIARIO 02</Nm>
+                    <PstlAdr>
+                        <StrtNm>Calle y Numero</StrtNm>
+                        <PstCd>Codigo Postal</PstCd>
+                        <TwnNm>Pueblo / Condado</TwnNm>
+                        <Ctry>MX</Ctry>
+                        <AdrLine>Ciudad</AdrLine>
+                    </PstlAdr>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <Othr>
+                            <Id>012128919018999999</Id>
+                        </Othr>
+                    </Id>
+                </CdtrAcct>
+                <RgltryRptg>
+                    <Dtls>
+                        <Inf>/SPID/OC/08</Inf>
+                    </Dtls>
+                </RgltryRptg>
+                <Tax>
+                    <Cdtr>
+                        <TaxId>RFC123456789</TaxId>
+                    </Cdtr>
+                </Tax>
+                <RmtInf>
+                    <Ustrd>Referencia Alf 002</Ustrd>
+                </RmtInf>
+            </CdtTrfTxInf>
+        </PmtInf>
+    </CstmrCdtTrfInitn>
+</Document>

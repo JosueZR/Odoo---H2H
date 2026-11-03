@@ -15,7 +15,8 @@ class StockLocation(models.Model):
         string='Estado', compute='_compute_pallet_info', search='_search_pallet_state')
 
     def _pallet_quants_domain(self):
-        return [('package_id', '!=', False), ('quantity', '>', 0)]
+        # Detectar cualquier quant con stock > 0, con o sin paquete asignado
+        return [('quantity', '>', 0)]
 
     @api.depends('usage')
     def _compute_pallet_info(self):
@@ -35,7 +36,8 @@ class StockLocation(models.Model):
             location.pallet_count = len(packages)
             location.pallet_owner_ids = location_quants.owner_id
             if location.usage == 'internal':
-                location.pallet_state = 'occupied' if packages else 'free'
+                # Ocupada si existe cualquier quant con qty > 0 (con o sin paquete)
+                location.pallet_state = 'occupied' if location_quants else 'free'
             else:
                 location.pallet_state = False
 

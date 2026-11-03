@@ -136,6 +136,9 @@ class PalletReceive(models.TransientModel):
         for _index in range(self.pallet_count):
             package = self.env['stock.quant.package'].create({
                 'package_type_id': self.package_type_id.id,
+                'pallet_index': _index + 1,
+                'pallet_total': self.pallet_count,
+                'pallet_origin': self.origin or False,
             })
             packages |= package
             move_lines = self.env['stock.move.line']

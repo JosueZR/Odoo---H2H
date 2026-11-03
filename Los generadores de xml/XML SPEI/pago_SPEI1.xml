@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <CstmrCdtTrfInitn>
+        <GrpHdr>
+            <MsgId>012</MsgId>
+            <CreDtTm>2026-06-02T8:05:00</CreDtTm>
+            <Authstn>
+                <Cd>AUTH</Cd>
+            </Authstn>
+            <NbOfTxs>1</NbOfTxs>
+            <CtrlSum>0.1</CtrlSum>
+            <InitgPty>
+                <Id>
+                    <OrgId>
+                        <Othr>
+                            <Id>PC000032364</Id>
+                        </Othr>
+                    </OrgId>
+                </Id>
+            </InitgPty>
+        </GrpHdr>
+    </CstmrCdtTrfInitn>
+</Document>

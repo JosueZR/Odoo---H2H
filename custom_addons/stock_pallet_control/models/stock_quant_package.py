@@ -6,6 +6,12 @@ class StockQuantPackage(models.Model):
     _inherit = 'stock.quant.package'
 
     pallet_content = fields.Char('Contenido', compute='_compute_pallet_content')
+    # Número de tarima dentro de un lote (ej. 1 de 3)
+    pallet_index = fields.Integer('No. de tarima', default=0)
+    # Total de tarimas registradas en el mismo lote
+    pallet_total = fields.Integer('Total de tarimas en el lote', default=0)
+    # Referencia del lote/recepción de origen
+    pallet_origin = fields.Char('Referencia de entrada')
 
     def _compute_pallet_content(self):
         for package in self:

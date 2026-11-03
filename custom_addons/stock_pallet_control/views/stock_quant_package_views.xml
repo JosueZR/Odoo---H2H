@@ -54,6 +54,7 @@
         <field name="name">stock.quant.package.form.pallet.label</field>
         <field name="model">stock.quant.package</field>
         <field name="inherit_id" ref="stock.view_quant_package_form"/>
+        <field name="active" eval="False"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_print_pallet_label" string="Imprimir etiqueta de tarima" type="object"
