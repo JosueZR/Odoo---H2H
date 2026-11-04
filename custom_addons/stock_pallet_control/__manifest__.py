@@ -1,48 +1,33 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Control de tarimas: etiquetas, escaneo y ubicaciones',
-    'version': '18.0.1.9.0',
+    'name': 'Control de tarimas: etiquetas',
+    'version': '18.0.3.0.0',
     'category': 'Inventory/Inventory',
-    'summary': 'Registra cada tarima como paquete con etiqueta de código de barras, '
-               'entrada y salida por escaneo, propietario y mapa de ubicaciones libres/ocupadas.',
+    'summary': 'Separa la recepción en tarimas (paquetes) e imprime una etiqueta 4x6 por tarima.',
     'description': """
-Control de tarimas sobre Inventario (Odoo 18 Community)
-=======================================================
+Control de tarimas sobre Inventario (Odoo 18)
+=============================================
 
-* Dashboard visual de operaciones de almacén.
-* Cada tarima es un paquete de Odoo; la etiqueta solo lleva el código del paquete.
-* Recepción de tarimas: crea el paquete, la recepción validada, asigna ubicación libre
-  automáticamente (reglas de ubicación + categoría de almacenamiento) e imprime la etiqueta 4x6.
-* Escáner de tarimas: salida y cambio de ubicación escaneando la misma etiqueta.
-* Propietario del inventario (mercancía de otras compañías).
-* Mapa de ubicaciones: libres / ocupadas, con la tarima y su propietario.
-* Generador de ubicaciones con código de barras para imprimir las etiquetas de rack.
+Se trabaja con los documentos estándar de Inventario; el módulo solo agrega:
+
+* En la Recepción (la que genera la orden de compra): botón "Separar en tarimas".
+  Indicas cuánto lleva cada tarima y Odoo crea un paquete por tarima (tipo "Tarima").
+* Botón "Imprimir etiquetas de tarima": etiqueta 4x6 con código de barras del paquete.
+* "Mover paquetes completos" en Entregas y operaciones internas de todos los almacenes,
+  para sacar o mover la tarima entera (también escaneándola en la app Código de barras).
 """,
     'author': 'Equipo H2H',
     'license': 'LGPL-3',
-    'depends': ['stock', 'barcodes'],
+    'depends': ['stock'],
     'data': [
         'security/pallet_security.xml',
         'security/ir.model.access.csv',
         'data/pallet_data.xml',
         'report/pallet_label_report.xml',
-        'wizard/pallet_receive_views.xml',
-        'wizard/pallet_scan_views.xml',
-        'wizard/location_generator_views.xml',
-        'views/stock_location_views.xml',
+        'wizard/pallet_split_views.xml',
         'views/stock_quant_package_views.xml',
         'views/stock_picking_pallet_views.xml',
-        'views/dashboard_views.xml',
-        'views/pallet_menus.xml',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'stock_pallet_control/static/src/dashboard/dashboard.scss',
-            'stock_pallet_control/static/src/dashboard/dashboard.xml',
-            'stock_pallet_control/static/src/dashboard/dashboard.js',
-        ],
-    },
     'installable': True,
     'application': False,
 }
-

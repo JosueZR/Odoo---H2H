@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--
-        Hereda el formulario estándar de Recepciones (stock.picking)
-        para agregar los campos de gestión por tarima.
-        Solo se muestra cuando picking_type_code = 'incoming'.
-    -->
+    <!-- Recepción estándar (la que genera la orden de compra): separar en tarimas e imprimir etiquetas -->
     <record id="view_picking_form_pallet_fields" model="ir.ui.view">
-        <field name="name">stock.picking.form.pallet.fields</field>
+        <field name="name">stock.picking.form.pallet</field>
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
-            <!-- Boton en la cabecera: visible cuando la recepcion esta validada -->
             <xpath expr="//header" position="inside">
+                <button name="action_open_pallet_split"
+                        string="Separar en tarimas"
+                        type="object"
+                        class="btn-secondary"
+                        groups="stock.group_stock_user"
+                        invisible="state != 'assigned' or picking_type_code != 'incoming'"/>
                 <button name="action_print_pallet_labels"
                         string="Imprimir etiquetas de tarima"
                         type="object"
