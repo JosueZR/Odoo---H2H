@@ -7,6 +7,7 @@
         <field name="inherit_id" ref="stock.view_quant_package_tree"/>
         <field name="arch" type="xml">
             <field name="location_id" position="after">
+                <field name="owner_id" optional="show"/>
                 <field name="pallet_content" optional="show"/>
                 <field name="pallet_origin" optional="show"/>
                 <field name="pack_date" optional="hide"/>
@@ -20,6 +21,7 @@
         <field name="inherit_id" ref="stock.quant_package_search_view"/>
         <field name="arch" type="xml">
             <field name="location_id" position="after">
+                <field name="owner_id" string="Propietario"/>
                 <field name="pallet_origin"/>
             </field>
         </field>

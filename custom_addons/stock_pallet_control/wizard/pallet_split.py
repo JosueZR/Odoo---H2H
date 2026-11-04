@@ -21,6 +21,10 @@ class PalletSplit(models.TransientModel):
         return self.env.ref('stock_pallet_control.package_type_tarima', raise_if_not_found=False)
 
     picking_id = fields.Many2one('stock.picking', 'Recepción', required=True, readonly=True)
+    owner_id = fields.Many2one(
+        'res.partner', 'Propietario de la mercancía', required=True,
+        help='Cliente dueño de la mercancía. Con propietario, Odoo la registra en el almacén '
+             'pero no la suma al valor del inventario de la compañía.')
     package_type_id = fields.Many2one(
         'stock.package.type', 'Tipo de paquete', required=True, default=_default_package_type)
     line_ids = fields.One2many('stock.pallet.split.line', 'wizard_id', 'Productos')
@@ -30,6 +34,8 @@ class PalletSplit(models.TransientModel):
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         picking = self.env['stock.picking'].browse(res.get('picking_id'))
+        if picking and 'owner_id' in fields_list and not res.get('owner_id'):
+            res['owner_id'] = (picking.owner_id or picking.partner_id.commercial_partner_id).id or False
         if picking and 'line_ids' in fields_list:
             res['line_ids'] = [Command.create({
                 'move_line_id': ml.id,
@@ -50,6 +56,10 @@ class PalletSplit(models.TransientModel):
         picking = self.picking_id
         if picking.picking_type_code != 'incoming' or picking.state != 'assigned':
             raise UserError(_('La recepción debe estar en estado "Listo".'))
+        if self.owner_id.commercial_partner_id in self.env['res.company'].sudo().search([]).partner_id:
+            raise UserError(_(
+                'El propietario debe ser el cliente dueño de la mercancía, no una compañía propia: '
+                'con una compañía propia la mercancía sí sumaría al valor del inventario.'))
         if not self.line_ids:
             raise UserError(_('No hay productos pendientes de poner en tarima en esta recepción.'))
         if self.pallet_count > MAX_PALLETS:
@@ -70,6 +80,8 @@ class PalletSplit(models.TransientModel):
         self.ensure_one()
         self._check()
         picking = self.picking_id
+        # El propietario de la recepción se aplica a todas sus líneas al validar (nativo de Odoo).
+        picking.owner_id = self.owner_id
         origin = picking.origin or picking.name
         total = self.pallet_count
         index = 0
@@ -95,7 +107,8 @@ class PalletSplit(models.TransientModel):
                     'pallet_total': total,
                     'pallet_origin': origin,
                 })
-                vals = dict(lot_vals, quantity=chunk, result_package_id=package.id, picked=True)
+                vals = dict(lot_vals, quantity=chunk, result_package_id=package.id, picked=True,
+                            owner_id=self.owner_id.id)
                 if position == 0:
                     ml.write(vals)
                 else:

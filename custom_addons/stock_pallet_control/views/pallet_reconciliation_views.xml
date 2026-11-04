@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inventario > Reportes > Conciliación por propietario
+         Existencias de clientes, tarima por tarima, para comparar contra el reporte de la bodega.
+         Se exporta a Excel con las herramientas nativas (seleccionar todo > Exportar). -->
+    <record id="view_pallet_reconciliation_list" model="ir.ui.view">
+        <field name="name">stock.quant.pallet.reconciliation.list</field>
+        <field name="model">stock.quant</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Conciliación por propietario" create="false" edit="false" delete="false">
+                <field name="owner_id"/>
+                <field name="location_id"/>
+                <field name="package_id"/>
+                <field name="product_id"/>
+                <field name="lot_id" groups="stock.group_production_lot"/>
+                <field name="quantity" sum="Total"/>
+                <field name="product_uom_id" string="Unidad"/>
+                <field name="in_date" string="Fecha de entrada" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pallet_reconciliation_search" model="ir.ui.view">
+        <field name="name">stock.quant.pallet.reconciliation.search</field>
+        <field name="model">stock.quant</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="Conciliación por propietario">
+                <field name="owner_id" string="Propietario"/>
+                <field name="location_id"/>
+                <field name="package_id" string="Tarima"/>
+                <field name="product_id"/>
+                <field name="lot_id" groups="stock.group_production_lot"/>
+                <group expand="1" string="Agrupar por">
+                    <filter name="group_owner" string="Propietario" context="{'group_by': 'owner_id'}"/>
+                    <filter name="group_location" string="Ubicación" context="{'group_by': 'location_id'}"/>
+                    <filter name="group_product" string="Producto" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_package" string="Tarima" context="{'group_by': 'package_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pallet_reconciliation" model="ir.actions.act_window">
+        <field name="name">Conciliación por propietario</field>
+        <field name="res_model">stock.quant</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('location_id.usage', '=', 'internal'), ('owner_id', '!=', False)]</field>
+        <field name="context">{'search_default_group_owner': 1, 'search_default_group_location': 1}</field>
+        <field name="search_view_id" ref="view_pallet_reconciliation_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pallet_reconciliation_list')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay mercancía de clientes en almacén</p>
+            <p>Aquí aparece la mercancía recibida con propietario, por cliente, ubicación y tarima.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pallet_reconciliation" name="Conciliación por propietario"
+              parent="stock.menu_warehouse_report" action="action_pallet_reconciliation" sequence="120"/>
+</odoo>

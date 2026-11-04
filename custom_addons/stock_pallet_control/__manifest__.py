@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Control de tarimas: etiquetas',
-    'version': '18.0.3.0.0',
+    'version': '18.0.3.1.0',
     'category': 'Inventory/Inventory',
-    'summary': 'Separa la recepción en tarimas (paquetes) e imprime una etiqueta 4x6 por tarima.',
+    'summary': 'Tarimas de mercancía de clientes (con propietario, valor $0): etiqueta 4x6 y conciliación.',
     'description': """
 Control de tarimas sobre Inventario (Odoo 18)
 =============================================
 
-Se trabaja con los documentos estándar de Inventario; el módulo solo agrega:
+Mercancía de clientes que se guarda o controla (no es compra ni venta). Se registra con
+Propietario (consigna nativa de Odoo): se ve en el almacén pero no suma al valor del inventario.
 
-* En la Recepción (la que genera la orden de compra): botón "Separar en tarimas".
-  Indicas cuánto lleva cada tarima y Odoo crea un paquete por tarima (tipo "Tarima").
+* Recepción: botón "Separar en tarimas" (pide el propietario); un paquete tipo "Tarima" por tarima.
 * Botón "Imprimir etiquetas de tarima": etiqueta 4x6 con código de barras del paquete.
-* "Mover paquetes completos" en Entregas y operaciones internas de todos los almacenes,
-  para sacar o mover la tarima entera (también escaneándola en la app Código de barras).
+* Inventario > Reportes > Conciliación por propietario, para comparar contra el reporte de la bodega.
+* Una entrega sin tarima ni propietario (p. ej. de una venta) no aparta mercancía de clientes.
+* "Mover paquetes completos" en Entregas e internas de todos los almacenes.
 """,
     'author': 'Equipo H2H',
     'license': 'LGPL-3',
@@ -27,6 +28,7 @@ Se trabaja con los documentos estándar de Inventario; el módulo solo agrega:
         'wizard/pallet_split_views.xml',
         'views/stock_quant_package_views.xml',
         'views/stock_picking_pallet_views.xml',
+        'views/pallet_reconciliation_views.xml',
     ],
     'installable': True,
     'application': False,

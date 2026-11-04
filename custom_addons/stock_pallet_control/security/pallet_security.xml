@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Igual que Inventario > Configuración > Ajustes > Paquetes: necesario para manejar tarimas. -->
+    <!-- Igual que Inventario > Configuración > Ajustes > Paquetes y Propietario de las existencias:
+         la tarima es un paquete y la mercancía de clientes se registra con su propietario (vale $0). -->
     <record id="base.group_user" model="res.groups">
-        <field name="implied_ids" eval="[(4, ref('stock.group_tracking_lot'))]"/>
+        <field name="implied_ids" eval="[
+            (4, ref('stock.group_tracking_lot')),
+            (4, ref('stock.group_tracking_owner')),
+        ]"/>
     </record>
 </odoo>

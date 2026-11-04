@@ -7,10 +7,12 @@
             <form string="Separar en tarimas">
                 <field name="picking_id" invisible="1"/>
                 <div class="text-muted mb-2">
-                    Indica cuánto lleva cada tarima. Odoo crea una tarima (paquete) por cada una;
-                    después valida la recepción e imprime las etiquetas.
+                    Indica el cliente dueño de la mercancía y cuánto lleva cada tarima. Odoo crea una
+                    tarima (paquete) por cada una; después valida la recepción e imprime las etiquetas.
+                    Con propietario, la mercancía no suma al valor del inventario.
                 </div>
                 <group>
+                    <field name="owner_id" options="{'no_create': True}"/>
                     <field name="package_type_id" options="{'no_create': True, 'no_open': True}"/>
                     <field name="pallet_count"/>
                 </group>

@@ -96,6 +96,12 @@
                     <!-- DATOS GENERALES -->
                     <div style="padding: 3mm 5mm; border-bottom: 2px solid #eee; background-color: #faf7f9;">
                         <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                            <tr t-if="o.owner_id">
+                                <td style="font-weight: bold; color: #714B67; width: 30%; padding: 1.2mm 0; vertical-align: middle;">Propietario</td>
+                                <td style="font-weight: bold; font-size: 15px; padding: 1.2mm 0;">
+                                    <t t-out="o.owner_id.display_name"/>
+                                </td>
+                            </tr>
                             <tr t-if="o.pallet_origin">
                                 <td style="font-weight: bold; color: #714B67; width: 30%; padding: 1.2mm 0; vertical-align: middle;">Referencia</td>
                                 <td style="font-size: 13px; font-weight: 500; padding: 1.2mm 0;"><t t-out="o.pallet_origin"/></td>
