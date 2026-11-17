@@ -1,6 +1,6 @@
 {
     "name": "Integración H2H HSBC Contabilidad",
-    "version": "18.0.3.1.0",
+    "version": "18.0.3.3.0",
     "category": "Accounting/Localizations",
     "summary": (
         "Generación y validación de archivos XML ISO 20022 (pain.001) "

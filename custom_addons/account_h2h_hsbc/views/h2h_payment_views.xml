@@ -303,9 +303,7 @@
                     <group string="Datos requeridos para OPI (Pago internacional)"
                            invisible="h2h_method_code != 'OPI'">
                         <group>
-                            <field name="h2h_opi_chrgbr"
-                                   readonly="h2h_state not in ('draft', 'method_selected')"
-                                   required="h2h_method_code == 'OPI'"/>
+                            <field name="h2h_opi_chrgbr" readonly="1" force_save="1"/>
                             <field name="h2h_opi_purp_code"
                                    readonly="h2h_state not in ('draft', 'method_selected')"
                                    required="h2h_method_code == 'OPI'"/>

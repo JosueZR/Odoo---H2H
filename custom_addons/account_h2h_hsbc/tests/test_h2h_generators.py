@@ -134,7 +134,7 @@ class DummyOpiPayment:
         self.partner_id = kw.get("partner") or DummyOpiPartner()
         self.partner_bank_id = kw.get("partner_bank", DummyOpiPartnerBank("0011223344", "BOFAUS3N"))
         self.journal_id = DummyJournal(acc_number=kw.get("journal_acc", "4043001353"))
-        self.h2h_opi_chrgbr = kw.get("chrgbr", "SHAR")
+        self.h2h_opi_chrgbr = kw.get("chrgbr", "DEBT")
         self.h2h_opi_purp_code = kw.get("purp", "CINV")
         self.h2h_opi_reg_code = kw.get("reg", "01")
         self.h2h_opi_referencia_larga = kw.get("ref", "Invoice TEST-001")
@@ -496,7 +496,7 @@ class TestH2HGenerators(unittest.TestCase):
         cdt = root.find(f".//{ns}CdtTrfTxInf")
         self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").attrib["Ccy"], "USD")
         self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").text, "0.50")
-        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "SHAR")
+        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "DEBT")
         self.assertEqual(cdt.find(f"{ns}CdtrAgt/{ns}FinInstnId/{ns}BIC").text, "BOFAUS3N")
         self.assertIsNone(cdt.find(f".//{ns}ClrSysMmbId"))
         self.assertEqual(cdt.find(f"{ns}Cdtr/{ns}PstlAdr/{ns}PstCd").text, "94108")
@@ -514,7 +514,7 @@ class TestH2HGenerators(unittest.TestCase):
         )
 
     def test_12_opi_generator_eur_iban(self):
-        """OPI a Bélgica en EUR: el IBAN va en CdtrAcct/Id/IBAN y ChrgBr CRED."""
+        """OPI a Bélgica en EUR: el IBAN va en CdtrAcct/Id/IBAN y ChrgBr sigue en DEBT."""
         pago = DummyOpiPayment(
             amount=1.00, currency="EUR", chrgbr="CRED", purp="GDDS", reg="19",
             partner=DummyOpiPartner("GHI SEMICONDUCTORS SA", "Avenue Brugmann 415", "1050", "Brussels", "BE"),
@@ -528,7 +528,8 @@ class TestH2HGenerators(unittest.TestCase):
         self.assertEqual(cdt.find(f"{ns}Amt/{ns}InstdAmt").attrib["Ccy"], "EUR")
         self.assertEqual(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}IBAN").text, "BE30001216371411")
         self.assertIsNone(cdt.find(f"{ns}CdtrAcct/{ns}Id/{ns}Othr"))
-        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "CRED")
+        # Aunque el pago traiga CRED, la comisión siempre la paga el ordenante
+        self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "DEBT")
         self.assertEqual(cdt.find(f"{ns}RgltryRptg/{ns}Dtls/{ns}Inf").text, "/BENEFRES/MX//19")
 
     def test_13_opi_rechaza_datos_invalidos(self):
@@ -540,7 +541,6 @@ class TestH2HGenerators(unittest.TestCase):
             "sin BIC": DummyOpiPayment(partner_bank=DummyOpiPartnerBank("0011223344", "")),
             "BIC inválido": DummyOpiPayment(partner_bank=DummyOpiPartnerBank("0011223344", "XX")),
             "sin código postal": DummyOpiPayment(partner=DummyOpiPartner(zip="")),
-            "ChrgBr inválido": DummyOpiPayment(chrgbr="XXXX"),
             "regulatorio fuera de catálogo": DummyOpiPayment(reg="99"),
             "ustrd > 140": DummyOpiPayment(ref="X" * 141),
         }
@@ -548,6 +548,22 @@ class TestH2HGenerators(unittest.TestCase):
             with self.subTest(caso=nombre):
                 with self.assertRaises(Exception):
                     gen.generate(pago)
+
+    def test_13b_opi_chrgbr_siempre_debt(self):
+        """ChrgBr sale siempre en DEBT y el validador rechaza SHAR o CRED en el XML."""
+        from ..xml_opi.opi_validator import validar_xml_opi
+        ns = "{urn:iso:std:iso:20022:tech:xsd:pain.001.001.03}"
+        for valor in ("SHAR", "CRED", "XXXX", False):
+            with self.subTest(chrgbr=valor):
+                xml_bytes = self.get_generator("OPI").generate(DummyOpiPayment(chrgbr=valor))
+                cdt = ET.fromstring(xml_bytes).find(f".//{ns}CdtTrfTxInf")
+                self.assertEqual(cdt.find(f"{ns}ChrgBr").text, "DEBT")
+        xml_ok = self.get_generator("OPI").generate(DummyOpiPayment())
+        self.assertIn(b"<ChrgBr>DEBT</ChrgBr>", xml_ok)
+        for valor in (b"SHAR", b"CRED"):
+            with self.subTest(xml_chrgbr=valor):
+                with self.assertRaises(Exception):
+                    validar_xml_opi(xml_ok.replace(b"<ChrgBr>DEBT</ChrgBr>", b"<ChrgBr>" + valor + b"</ChrgBr>"))
 
     def test_14_opi_normaliza_acentos_swift(self):
         """Nombres con acentos/ñ se normalizan a ASCII para la red SWIFT."""

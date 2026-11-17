@@ -6,7 +6,8 @@ Usa el mismo estándar pain.001.001.03 que el resto de métodos.
 Diferencias clave contra los pagos nacionales (SPEI/SPID/Servicios/Nómina):
 - El banco beneficiario se identifica con BIC (SWIFT), no con ClrSysMmbId de 3 dígitos.
 - La cuenta beneficiaria es IBAN (países que lo usan) o número de cuenta normal (Othr/Id).
-- Existe ChrgBr (quién paga las comisiones): DEBT, CRED o SHAR.
+- ChrgBr (quién paga las comisiones) siempre es DEBT: la comisión la paga la empresa
+  ordenante, nunca el beneficiario (regla de negocio GICONSA).
 - El propósito de pago usa códigos ISO globales (Purp/Cd), no los locales mexicanos.
 - La moneda puede variar (USD, EUR, GBP, ...) pero NO puede ser MXN.
 - Se exige el reporte regulatorio RgltryRptg con formato /BENEFRES/MX//XX (XX = 01..22).
@@ -38,12 +39,10 @@ DIRECCION_MAX_LENGTH    = 70
 USTRD_MAX_LENGTH        = 140
 END_TO_END_MAX_LENGTH   = 35   # Max35Text
 
-# Quién paga las comisiones (ChrgBr)
-CHRGBR_OPCIONES = {
-    "DEBT": "Las paga el ordenante",
-    "CRED": "Las paga el beneficiario",
-    "SHAR": "Compartidas (comisión al ordenante y al beneficiario)",
-}
+# Quién paga las comisiones (ChrgBr).
+# Regla de negocio: en OPI la comisión SIEMPRE la paga la empresa (ordenante).
+# Por eso el XML se genera siempre con DEBT y no se aceptan SHAR ni CRED.
+CHRGBR_FIJO = "DEBT"
 
 # Códigos de propósito global ISO 20022 (Purp/Cd) más comunes
 PURP_CODES = {

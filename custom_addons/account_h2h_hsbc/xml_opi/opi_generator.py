@@ -9,8 +9,8 @@ Los datos salen de Odoo en lugar de diccionarios y contadores en archivos .txt:
   - Banco beneficiario .. partner_bank_id.bank_id.bic
   - Cuenta beneficiaria . partner_bank_id.acc_number (IBAN si acc_type == 'iban')
   - Cliente HSBC ........ journal_id.hsbc_client_id
-  - Campos propios OPI .. h2h_opi_chrgbr, h2h_opi_purp_code, h2h_opi_reg_code,
-                          h2h_opi_referencia_larga
+  - Campos propios OPI .. h2h_opi_purp_code, h2h_opi_reg_code, h2h_opi_referencia_larga
+  - ChrgBr .............. siempre DEBT (la comisión la paga la empresa ordenante)
 """
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -21,7 +21,7 @@ from ..generators.base_generator import BaseH2HGenerator
 from .constants import (
     XML_NAMESPACE, XML_NAMESPACE_XSI,
     PMT_MTD, SVC_LVL_CODE, COUNTRY, BIC_DEFAULT,
-    USTRD_MAX_LENGTH, RGLTRY_PREFIJO, RGLTRY_ANTES_DE_PURP,
+    USTRD_MAX_LENGTH, RGLTRY_PREFIJO, RGLTRY_ANTES_DE_PURP, CHRGBR_FIJO,
 )
 from .opi_validator import (
     validar_pago_opi, validar_xml_opi,
@@ -35,7 +35,6 @@ class OpiGenerator(BaseH2HGenerator):
     Generador XML para pagos OPI (Cross Border).
 
     Campos adicionales en account.payment requeridos por OPI:
-    - h2h_opi_chrgbr            — Quién paga comisiones (DEBT/CRED/SHAR).
     - h2h_opi_purp_code         — Propósito ISO global (CINV, GDDS, ...).
     - h2h_opi_reg_code          — Propósito regulatorio 01..22.
     - h2h_opi_referencia_larga  — Texto libre para RmtInf/Ustrd (máx. 140).
@@ -78,7 +77,6 @@ class OpiGenerator(BaseH2HGenerator):
         monto          = Decimal(str(payment.amount))
         moneda         = payment.currency_id.name
 
-        chrgbr    = payment.h2h_opi_chrgbr
         purp_code = payment.h2h_opi_purp_code
         reg_code  = payment.h2h_opi_reg_code
         ref_larga = texto_swift(getattr(payment, "h2h_opi_referencia_larga", None)
@@ -141,8 +139,8 @@ class OpiGenerator(BaseH2HGenerator):
         instd.set("Ccy", moneda)
         instd.text = f"{monto:.2f}"
 
-        # Quién paga las comisiones
-        ET.SubElement(cdt, "ChrgBr").text = chrgbr
+        # Quién paga las comisiones: siempre la empresa ordenante (DEBT)
+        ET.SubElement(cdt, "ChrgBr").text = CHRGBR_FIJO
 
         # Banco beneficiario: BIC del banco extranjero
         fi_id2 = ET.SubElement(ET.SubElement(cdt, "CdtrAgt"), "FinInstnId")

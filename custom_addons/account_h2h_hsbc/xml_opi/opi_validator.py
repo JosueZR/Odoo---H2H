@@ -9,7 +9,7 @@ Reglas de OPI:
 - Cuenta beneficiaria: IBAN o número de cuenta normal (Othr/Id).
 - Beneficiario ubicado fuera de México, con dirección completa
   (calle, código postal, ciudad y país) — pedido por HSBC 09/2026.
-- ChrgBr obligatorio: DEBT / CRED / SHAR.
+- ChrgBr obligatorio y siempre DEBT (la comisión la paga la empresa ordenante).
 - Purp/Cd obligatorio (código ISO global).
 - RgltryRptg obligatorio: "/BENEFRES/MX//{01..22}".
 - RmtInf/Ustrd máximo 140 caracteres.
@@ -27,7 +27,7 @@ from .constants import (
     XML_NAMESPACE, SVC_LVL_CODE, CURRENCY_EXCLUIDA,
     NOMBRE_MAX_LENGTH, DIRECCION_MAX_LENGTH, USTRD_MAX_LENGTH,
     END_TO_END_MAX_LENGTH,
-    CHRGBR_OPCIONES, PURP_CODES, CODIGOS_REGULATORIOS_OPI, RGLTRY_PREFIJO,
+    CHRGBR_FIJO, PURP_CODES, CODIGOS_REGULATORIOS_OPI, RGLTRY_PREFIJO,
 )
 
 _BIC_RE  = re.compile(r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$")
@@ -169,10 +169,6 @@ def validar_pago_opi(payment) -> None:
         errores.append("El monto del pago debe ser mayor a cero.")
 
     # ── Campos propios de OPI ─────────────────────────────────────────────────
-    chrgbr = getattr(payment, "h2h_opi_chrgbr", None) or ""
-    if chrgbr not in CHRGBR_OPCIONES:
-        errores.append(f"Selecciona quién paga las comisiones: {', '.join(CHRGBR_OPCIONES)}.")
-
     purp = getattr(payment, "h2h_opi_purp_code", None) or ""
     if purp not in PURP_CODES:
         errores.append(f"El propósito ISO (Purp) es obligatorio. Opciones: {', '.join(PURP_CODES)}.")
@@ -205,7 +201,7 @@ def validar_xml_opi(xml_bytes: bytes) -> None:
       - GrpHdr (MsgId, CreDtTm, NbOfTxs='1', CtrlSum) e InitgPty con ID de cliente
       - SvcLvl='URGP'
       - InstdAmt con moneda distinta de MXN
-      - ChrgBr en DEBT/CRED/SHAR
+      - ChrgBr = DEBT (comisión a cargo del ordenante)
       - CdtrAgt con BIC válido (sin ClrSysMmbId)
       - Cdtr con dirección completa (StrtNm, PstCd, TwnNm, Ctry) y Ctry != MX
       - CdtrAcct con IBAN o Othr/Id
@@ -266,8 +262,11 @@ def validar_xml_opi(xml_bytes: bytes) -> None:
 
     # ChrgBr
     chrgbr = val(cdt, "ChrgBr")
-    if chrgbr not in CHRGBR_OPCIONES:
-        raise UserError(f"Estructura OPI inválida: ChrgBr debe ser DEBT, CRED o SHAR. Encontrado: '{chrgbr}'.")
+    if chrgbr != CHRGBR_FIJO:
+        raise UserError(
+            f"Estructura OPI inválida: ChrgBr debe ser {CHRGBR_FIJO} "
+            f"(la comisión la paga la empresa ordenante). Encontrado: '{chrgbr}'."
+        )
 
     # Banco beneficiario: BIC (no ClrSysMmbId)
     fin = find(find(cdt, "CdtrAgt"), "FinInstnId")

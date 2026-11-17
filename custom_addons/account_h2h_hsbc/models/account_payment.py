@@ -173,15 +173,13 @@ class AccountPayment(models.Model):
     # ── Campos específicos de OPI (Orden de Pago Internacional / Cross Border) ──
     h2h_opi_chrgbr = fields.Selection(
         selection=[
-            ("SHAR", "SHAR — Compartidas (ordenante y beneficiario)"),
             ("DEBT", "DEBT — Las paga el ordenante"),
-            ("CRED", "CRED — Las paga el beneficiario"),
         ],
         string="Comisiones OPI (ChrgBr)",
-        default="SHAR",
+        default="DEBT",
         copy=False,
-        help="Define quién paga las comisiones del pago internacional. "
-             "Con SHAR se cobra comisión tanto al ordenante como al beneficiario.",
+        help="Quién paga las comisiones del pago internacional. "
+             "Siempre DEBT: la comisión la paga la empresa ordenante, nunca el beneficiario.",
     )
     h2h_opi_purp_code = fields.Selection(
         selection=[
@@ -373,7 +371,7 @@ class AccountPayment(models.Model):
         # 2b. Si venía de OPI y pasa a otro método, restablecer los campos residuales de OPI
         if metodo_anterior == "OPI" and code != "OPI":
             vals.update({
-                "h2h_opi_chrgbr": "SHAR",
+                "h2h_opi_chrgbr": "DEBT",
                 "h2h_opi_purp_code": "CINV",
                 "h2h_opi_reg_code": "01",
                 "h2h_opi_referencia_larga": False,
@@ -655,7 +653,7 @@ class AccountPayment(models.Model):
                 if instd is not None and instd.get("Ccy") == "MXN":
                     raise UserError("OPI requiere moneda extranjera. No se permite MXN.")
             if find_tag(cdt_trf, "ChrgBr") is None:
-                raise UserError("OPI requiere el elemento ChrgBr (DEBT, CRED o SHAR).")
+                raise UserError("OPI requiere el elemento ChrgBr (DEBT).")
             if find_tag(cdt_trf, "RgltryRptg") is None:
                 raise UserError(
                     "OPI requiere el elemento RgltryRptg con el propósito regulatorio. "
@@ -800,20 +798,37 @@ class AccountPayment(models.Model):
     # Acción 3b — Registrar rechazo bancario
     # =========================================================================
     def action_h2h_confirm_rejected(self):
-        """HSBC rechazó la instrucción."""
+        """
+        HSBC rechazó la instrucción: el dinero nunca salió del banco.
+        Se deshace el cruce con las facturas y se cancela el asiento del pago,
+        para que las facturas regresen a "Sin pagar" y puedan pagarse de nuevo.
+        """
         self.ensure_one()
 
         if self.h2h_state != "sent_to_bank":
             raise UserError("Solo se puede registrar rechazo de un pago que fue enviado a HSBC.")
 
+        facturas = self.reconciled_bill_ids | self.reconciled_invoice_ids
+        asiento = self.move_id
+        if asiento:
+            # button_draft quita la conciliación con las facturas; luego se cancela el asiento.
+            if asiento.state == "posted":
+                asiento.button_draft()
+            if asiento.state == "draft":
+                asiento.button_cancel()
+
         self.write({"h2h_state": "rejected"})
+        self.action_reject()
+
+        nombres = ", ".join(facturas.mapped("name")) or "ninguna"
         self.message_post(
             body=(
                 "<b>HSBC rechazo el pago.</b><br/>"
-                "Revise los datos del beneficiario (CLABE, nombre) y regenere el XML."
+                f"Se cancelo el asiento del pago y se libero la factura ({nombres}), "
+                "que regresa a 'Sin pagar'.<br/>"
+                "Revise los datos del beneficiario (CLABE, nombre) y registre un pago nuevo."
             ),
         )
-        self.action_reject()
 
     # =========================================================================
     # Restablecer a borrador
