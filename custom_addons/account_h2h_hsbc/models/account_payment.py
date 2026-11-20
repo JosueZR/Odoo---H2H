@@ -1,19 +1,186 @@
 # -*- coding: utf-8 -*-
 import base64
 import xml.etree.ElementTree as ET
+from markupsafe import Markup
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+
+
+# Moneda en la que opera cada método H2H. OPI opera en cualquier divisa excepto MXN.
+H2H_MONEDA_METODO = {
+    "SPEI": "MXN",
+    "SERVICIOS": "MXN",
+    "NOMINA": "MXN",
+    "SPID": "USD",
+}
+H2H_NOMBRE_METODO = {
+    "SPEI": "SPEI",
+    "SERVICIOS": "Servicios",
+    "NOMINA": "Nómina HSBC",
+    "SPID": "SPID",
+    "OPI": "OPI",
+}
+
+
+# Campos del pago que se escriben en el XML. Si cambian después de generarlo, el
+# archivo ya no corresponde al pago y debe generarse de nuevo.
+H2H_CAMPOS_XML = (
+    "amount", "currency_id", "partner_id", "partner_bank_id", "journal_id", "date",
+    "h2h_spid_rfc", "h2h_spid_codigo", "h2h_spid_referencia_larga",
+    "h2h_opi_purp_code", "h2h_opi_reg_code", "h2h_opi_referencia_larga",
+    "h2h_nomina_line_ids",
+)
+# El memo solo se usa como respaldo de la referencia OPI: invalida el XML, pero
+# corregirlo después del envío no cambia lo que recibió el banco.
+H2H_CAMPOS_XML_INVALIDAN = H2H_CAMPOS_XML + ("memo",)
+
+# Estados H2H en los que el archivo ya está (o estuvo) en manos de HSBC.
+H2H_ESTADOS_EN_BANCO = ("sent_to_bank", "accepted")
+
+
+def h2h_metodo_compatible(code, moneda):
+    """True si el método H2H puede operar en la moneda indicada (código ISO)."""
+    if code == "OPI":
+        return moneda != "MXN"
+    requerida = H2H_MONEDA_METODO.get(code)
+    return requerida is None or requerida == moneda
 
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    # ── Compatibilidad método / moneda ────────────────────────────────────────
+    def _h2h_metodo_sugerido(self):
+        """
+        Método H2H que corresponde a la moneda del pago:
+        MXN -> SPEI; USD -> SPID si el beneficiario es de México, si no OPI;
+        cualquier otra divisa -> OPI.
+        """
+        self.ensure_one()
+        moneda = self.currency_id.name
+        if moneda == "MXN":
+            code = "SPEI"
+        elif moneda == "USD" and (not self.partner_id.country_id or self.partner_id.country_id.code == "MX"):
+            code = "SPID"
+        else:
+            code = "OPI"
+        return self.env["h2h.payment.method"].search(
+            [("code", "=", code), ("is_available", "=", True)], limit=1
+        )
+
+    def _h2h_ajustar_metodo_a_moneda(self):
+        """Si el método preseleccionado no opera en la moneda del pago, usar el sugerido."""
+        for pago in self:
+            if (
+                pago.is_hsbc_journal
+                and pago.h2h_method
+                and pago.h2h_state in ("draft", "method_selected")
+                and not h2h_metodo_compatible(pago.h2h_method.code, pago.currency_id.name)
+            ):
+                sugerido = pago._h2h_metodo_sugerido()
+                if sugerido:
+                    pago.write({"h2h_method": sugerido.id, "h2h_state": "method_selected"})
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        pagos = super().create(vals_list)
+        # Pagos creados por código (p. ej. "Pagar" desde la factura): default_get no
+        # conoce el tipo de pago, así que el método se elige aquí según la moneda.
+        for pago in pagos:
+            if pago.is_hsbc_journal and not pago.h2h_method:
+                sugerido = pago._h2h_metodo_sugerido()
+                if sugerido:
+                    pago.write({"h2h_method": sugerido.id, "h2h_state": "method_selected"})
+        # default_get preselecciona SPEI antes de conocer la moneda (p. ej. al abrir el
+        # formulario de un pago en USD o EUR); se corrige con la moneda real.
+        pagos._h2h_ajustar_metodo_a_moneda()
+        return pagos
+
+    # ── Protección del XML ya generado o enviado ─────────────────────────────
+    def _h2h_campos_xml_cambiados(self, vals, campos):
+        """Campos de `campos` cuyo valor en `vals` es distinto del actual del pago."""
+        self.ensure_one()
+        cambiados = []
+        for campo in campos:
+            if campo not in vals:
+                continue
+            field = self._fields[campo]
+            nuevo = vals[campo]
+            actual = self[campo]
+            if field.type == "one2many":
+                distinto = bool(nuevo)  # cualquier comando sobre las líneas
+            elif field.type == "many2one":
+                if isinstance(nuevo, models.BaseModel):
+                    nuevo = nuevo.id
+                distinto = (actual.id or False) != (nuevo or False)
+            elif field.type in ("monetary", "float"):
+                distinto = fields.Float.compare(actual or 0.0, nuevo or 0.0, precision_digits=2) != 0
+            elif field.type == "date":
+                distinto = actual != fields.Date.to_date(nuevo)
+            else:
+                distinto = (actual or False) != (nuevo or False)
+            if distinto:
+                cambiados.append(field.string)
+        return cambiados
+
+    def write(self, vals):
+        invalidar = self.browse()
+        # Las migraciones que reparan datos contables pasan h2h_sin_proteccion_xml=True.
+        if not self.env.context.get("h2h_sin_proteccion_xml") and any(
+            campo in vals for campo in H2H_CAMPOS_XML_INVALIDAN
+        ):
+            for pago in self:
+                if pago.h2h_state in H2H_ESTADOS_EN_BANCO:
+                    cambiados = pago._h2h_campos_xml_cambiados(vals, H2H_CAMPOS_XML)
+                    if cambiados:
+                        raise UserError(
+                            f"El pago {pago.name or ''} ya se envió a HSBC con los datos actuales, "
+                            f"así que no se puede modificar: {', '.join(cambiados)}.\n\n"
+                            "Si los datos estaban mal, espere la respuesta del banco; si lo rechaza, "
+                            "registre el rechazo, restablezca el pago a borrador y corríjalo."
+                        )
+                elif pago.h2h_state == "xml_generated" and pago._h2h_campos_xml_cambiados(
+                    vals, H2H_CAMPOS_XML_INVALIDAN
+                ):
+                    invalidar |= pago
+
+        res = super().write(vals)
+
+        if invalidar:
+            # El XML ya no refleja el pago: se exige generarlo de nuevo antes de enviar.
+            invalidar.write({"h2h_state": "method_selected"})
+            for pago in invalidar:
+                pago.message_post(body=Markup(
+                    "<b>El XML generado quedó desactualizado</b> porque cambiaron datos del pago.<br/>"
+                    "Genere el XML de nuevo antes de enviarlo a HSBC."
+                ))
+        return res
+
+    @api.onchange("currency_id")
+    def _onchange_currency_h2h(self):
+        if (
+            self.is_hsbc_journal
+            and self.h2h_method
+            and self.h2h_state in ("draft", "method_selected")
+            and not h2h_metodo_compatible(self.h2h_method.code, self.currency_id.name)
+        ):
+            sugerido = self._h2h_metodo_sugerido()
+            if sugerido:
+                self.h2h_method = sugerido
+                self.h2h_method_code = sugerido.code
+
     # ── Valores por defecto para inicialización al crear un pago nuevo ────────
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        # Si no se especificó diario o el diario no es HSBC, pero existe un diario HSBC H2H en la compañía,
-        # sugerirlo para que los cuadros H2H aparezcan inmediatamente desde que se abre el formulario.
+        # H2H solo se usa para pagos a proveedores: los cobros conservan su diario.
+        tipo = res.get("payment_type") or self.env.context.get("default_payment_type")
+        if tipo != "outbound":
+            return res
+
+        # Si el usuario abrió el pago desde un diario concreto (p. ej. Efectivo), se respeta.
+        # Solo cuando no eligió diario se sugiere el de HSBC, para que los cuadros H2H
+        # aparezcan desde que se abre el formulario.
         company_id = res.get("company_id") or self.env.company.id
         current_journal_id = res.get("journal_id")
         hsbc_journal = None
@@ -22,6 +189,8 @@ class AccountPayment(models.Model):
             journal = self.env["account.journal"].browse(current_journal_id)
             if journal.is_h2h_enabled:
                 hsbc_journal = journal
+            elif self.env.context.get("default_journal_id"):
+                return res
 
         if not hsbc_journal:
             hsbc_journal = self.env["account.journal"].search([
@@ -44,15 +213,21 @@ class AccountPayment(models.Model):
 
     # ── Detección de diario HSBC ──────────────────────────────────────────────
     is_hsbc_journal = fields.Boolean(
-        string="Es diario HSBC H2H",
+        string="Pago saliente HSBC H2H",
         compute="_compute_is_hsbc_journal",
         store=False,
+        help="Pago a proveedor (saliente) en un diario con HSBC H2H habilitado. "
+             "H2H solo se usa para pagar; los cobros no muestran la sección H2H.",
     )
 
-    @api.depends("journal_id", "journal_id.is_h2h_enabled")
+    @api.depends("journal_id", "journal_id.is_h2h_enabled", "payment_type")
     def _compute_is_hsbc_journal(self):
         for rec in self:
-            rec.is_hsbc_journal = bool(rec.journal_id and rec.journal_id.is_h2h_enabled)
+            rec.is_hsbc_journal = bool(
+                rec.journal_id
+                and rec.journal_id.is_h2h_enabled
+                and rec.payment_type == "outbound"
+            )
 
     @api.onchange("journal_id")
     def _onchange_journal_h2h(self):
@@ -341,24 +516,35 @@ class AccountPayment(models.Model):
         })
 
         # ── Ajustes de compatibilidad al cambiar de método ───────────────────
-        # 1. Moneda adecuada según el nuevo método
+        # 1. La moneda NO se cambia: la define la factura / el pago y, si el pago
+        #    ya está registrado, su asiento contable (que Odoo no resincroniza).
+        #    Si el método no opera en la moneda del pago, se explica qué hacer.
+        moneda = self.currency_id.name
+        if not h2h_metodo_compatible(code, moneda):
+            compatibles = [
+                H2H_NOMBRE_METODO[c] for c in ("SPEI", "SERVICIOS", "NOMINA", "SPID", "OPI")
+                if h2h_metodo_compatible(c, moneda)
+            ]
+            opera = "cualquier divisa distinta de MXN" if code == "OPI" else H2H_MONEDA_METODO[code]
+            if self.move_id:
+                accion = (
+                    f"Este pago ya está registrado en {moneda}. Para pagar por "
+                    f"{H2H_NOMBRE_METODO[code]} registra la factura y el pago en {opera}."
+                )
+            else:
+                accion = f"Cambia primero el campo Moneda del pago a {opera}."
+            raise UserError(
+                f"{H2H_NOMBRE_METODO[code]} opera en {opera} y este pago está en {moneda}.\n\n"
+                f"{accion}\n\n"
+                f"Métodos disponibles para {moneda}: {', '.join(compatibles)}."
+            )
+
+        # 1b. Al entrar a SPID, precargar los datos obligatorios que se puedan deducir
         if code == "SPID":
-            # SPID opera en USD
-            moneda_usd = self.env["res.currency"].search([("name", "=", "USD")], limit=1)
-            if moneda_usd:
-                vals["currency_id"] = moneda_usd.id
-        elif code == "OPI":
-            # OPI opera en moneda extranjera (nunca MXN): si el pago está en MXN,
-            # proponer USD. Si ya está en otra divisa (EUR, GBP...) se respeta.
-            if self.currency_id.name == "MXN":
-                moneda_usd = self.env["res.currency"].search([("name", "=", "USD")], limit=1)
-                if moneda_usd:
-                    vals["currency_id"] = moneda_usd.id
-        elif metodo_anterior in ("SPID", "OPI") and code in ("SPEI", "NOMINA", "SERVICIOS"):
-            # Si venía de un método en divisa extranjera y pasa a uno nacional, ajustar a MXN
-            moneda_mxn = self.env["res.currency"].search([("name", "=", "MXN")], limit=1)
-            if moneda_mxn:
-                vals["currency_id"] = moneda_mxn.id
+            if not self.h2h_spid_codigo:
+                vals["h2h_spid_codigo"] = "04"
+            if not self.h2h_spid_rfc and self.partner_id.vat:
+                vals["h2h_spid_rfc"] = self.partner_id.vat
 
         # 2. Si venía de SPID y pasa a otro método, limpiar campos residuales de SPID
         if metodo_anterior == "SPID" and code != "SPID":
@@ -386,10 +572,10 @@ class AccountPayment(models.Model):
         # Registrar en el chatter el cambio de método si ya había uno seleccionado
         if metodo_anterior and metodo_anterior != code:
             self.message_post(
-                body=(
-                    f"Método de pago H2H cambiado de <b>{metodo_anterior}</b> a <b>{code}</b>. "
-                    f"Se actualizaron los campos del formulario para el nuevo método."
-                )
+                body=Markup(
+                    "Método de pago H2H cambiado de <b>{}</b> a <b>{}</b>. "
+                    "Se actualizaron los campos del formulario para el nuevo método."
+                ).format(metodo_anterior, code)
             )
 
         self.write(vals)
@@ -411,7 +597,26 @@ class AccountPayment(models.Model):
             raise UserError("No se puede generar un archivo XML para un pago cancelado.")
 
         if not self.is_hsbc_journal:
-            raise UserError("Este pago no pertenece a un diario con HSBC H2H habilitado.")
+            raise UserError(
+                "Solo se genera XML para pagos a proveedores (salientes) "
+                "en un diario con HSBC H2H habilitado."
+            )
+
+        if self.h2h_state not in ("draft", "method_selected"):
+            if self.h2h_state in H2H_ESTADOS_EN_BANCO:
+                raise UserError(
+                    "Este pago ya se envió a HSBC. No se puede generar otro XML, "
+                    "porque enviarlo de nuevo duplicaría el pago."
+                )
+            if self.h2h_state == "rejected":
+                raise UserError(
+                    "HSBC rechazó este pago. Restablézcalo a borrador, corrija los datos "
+                    "y vuelva a generar el XML."
+                )
+            raise UserError(
+                "El XML de este pago ya está generado y vigente. Puede descargarlo o enviarlo a HSBC; "
+                "si cambia algún dato del pago, se habilitará generarlo de nuevo."
+            )
 
         if not self.h2h_method:
             raise UserError("Selecciona un método de pago HSBC antes de generar el XML.")
@@ -453,11 +658,11 @@ class AccountPayment(models.Model):
             })
 
         self.message_post(
-            body=(
-                f"<b>XML {self.h2h_method.name} generado y validado correctamente.</b><br/>"
-                f"Archivo: <i>{attachment_name}</i><br/>"
-                f"Puede descargarlo desde los adjuntos o usando el botón Descargar XML."
-            ),
+            body=Markup(
+                "<b>XML {} generado y validado correctamente.</b><br/>"
+                "Archivo: <i>{}</i><br/>"
+                "Puede descargarlo desde los adjuntos o usando el botón Descargar XML."
+            ).format(self.h2h_method.name, attachment_name),
         )
 
         # Devolvemos notificación sin recarga disruptiva
@@ -743,20 +948,20 @@ class AccountPayment(models.Model):
         self.write({"h2h_state": "sent_to_bank"})
 
         self.message_post(
-            body=(
-                f"<b>XML enviado a HSBC H2H (simulacion).</b><br/>"
-                f"<br/>"
-                f"<b>Metodo:</b> {metodo}<br/>"
-                f"<b>Referencia de transmision:</b> {ref_simulada}<br/>"
-                f"<b>Fecha/hora:</b> {timestamp}<br/>"
-                f"<b>Archivo:</b> {self.h2h_xml_attachment_id.name}<br/>"
-                f"<b>Canal:</b> HSBC H2H / pain.001.001.03<br/>"
-                f"<b>Estado en banco:</b> Instruccion recibida — en cola de procesamiento<br/>"
-                f"<br/>"
-                f"<i>Aviso: Este es un envio simulado. "
-                f"Cuando se configure la conexion real (SFTP/API), "
-                f"este paso transmitira el archivo automaticamente a HSBC.</i>"
-            ),
+            body=Markup(
+                "<b>XML enviado a HSBC H2H (simulación).</b><br/>"
+                "<br/>"
+                "<b>Método:</b> {}<br/>"
+                "<b>Referencia de transmisión:</b> {}<br/>"
+                "<b>Fecha/hora:</b> {}<br/>"
+                "<b>Archivo:</b> {}<br/>"
+                "<b>Canal:</b> HSBC H2H / pain.001.001.03<br/>"
+                "<b>Estado en banco:</b> Instrucción recibida — en cola de procesamiento<br/>"
+                "<br/>"
+                "<i>Aviso: Este es un envío simulado. "
+                "Cuando se configure la conexión real (SFTP/API), "
+                "este paso transmitirá el archivo automáticamente a HSBC.</i>"
+            ).format(metodo, ref_simulada, timestamp, self.h2h_xml_attachment_id.name),
         )
 
         return {
@@ -784,15 +989,27 @@ class AccountPayment(models.Model):
 
         if self.h2h_state != "sent_to_bank":
             raise UserError("Solo se puede confirmar un pago que ya fue enviado a HSBC.")
+        self._h2h_exigir_pago_vigente()
 
         self.write({"h2h_state": "accepted"})
         self.message_post(
-            body=(
-                "<b>HSBC confirmo la aceptacion del pago.</b><br/>"
+            body=Markup(
+                "<b>HSBC confirmó la aceptación del pago.</b><br/>"
                 "El pago fue procesado por el banco y se marca como Pagado en Odoo."
             ),
         )
         self.action_validate()
+
+    def _h2h_exigir_pago_vigente(self):
+        """El pago debe seguir vivo en Odoo para registrar la respuesta de HSBC."""
+        self.ensure_one()
+        if self.state in ("canceled", "rejected"):
+            estado = dict(self._fields["state"]._description_selection(self.env))[self.state]
+            raise UserError(
+                f"El pago {self.name or ''} está en estado '{estado}' en Odoo, "
+                "así que no se puede registrar la respuesta de HSBC sobre él. "
+                "Revise con el banco qué pasó con la instrucción enviada."
+            )
 
     # =========================================================================
     # Acción 3b — Registrar rechazo bancario
@@ -807,6 +1024,7 @@ class AccountPayment(models.Model):
 
         if self.h2h_state != "sent_to_bank":
             raise UserError("Solo se puede registrar rechazo de un pago que fue enviado a HSBC.")
+        self._h2h_exigir_pago_vigente()
 
         facturas = self.reconciled_bill_ids | self.reconciled_invoice_ids
         asiento = self.move_id
@@ -822,19 +1040,45 @@ class AccountPayment(models.Model):
 
         nombres = ", ".join(facturas.mapped("name")) or "ninguna"
         self.message_post(
-            body=(
-                "<b>HSBC rechazo el pago.</b><br/>"
-                f"Se cancelo el asiento del pago y se libero la factura ({nombres}), "
+            body=Markup(
+                "<b>HSBC rechazó el pago.</b><br/>"
+                "Se canceló el asiento del pago y se liberó la factura ({}), "
                 "que regresa a 'Sin pagar'.<br/>"
                 "Revise los datos del beneficiario (CLABE, nombre) y registre un pago nuevo."
-            ),
+            ).format(nombres),
         )
 
     # =========================================================================
-    # Restablecer a borrador
+    # Restablecer a borrador / Cancelar
     # =========================================================================
+    def _h2h_bloquear_si_en_banco(self, accion):
+        """
+        Un pago que ya está en HSBC no se puede regresar a borrador ni cancelar en Odoo:
+        reabriría los botones de generar y enviar (pago duplicado) o dejaría el pago
+        cancelado en Odoo mientras el banco lo procesa.
+        """
+        for pago in self:
+            if pago.h2h_state == "sent_to_bank":
+                raise UserError(
+                    f"El pago {pago.name or ''} ya se envió a HSBC y está esperando respuesta del banco, "
+                    f"así que no se puede {accion}.\n\n"
+                    "Primero registre la respuesta con 'HSBC: Confirmar pago' o 'HSBC: Registrar rechazo'."
+                )
+            if pago.h2h_state == "accepted":
+                raise UserError(
+                    f"HSBC ya aceptó el pago {pago.name or ''}: el dinero salió de la cuenta, "
+                    f"así que no se puede {accion}, porque permitiría enviarlo otra vez.\n\n"
+                    "Si hay que revertirlo, gestione la devolución con el proveedor y regístrela "
+                    "como un movimiento aparte."
+                )
+
+    def action_cancel(self):
+        self._h2h_bloquear_si_en_banco("cancelar")
+        return super().action_cancel()
+
     def action_draft(self):
         """Al restablecer a borrador, desbloquea la edición del método H2H."""
+        self._h2h_bloquear_si_en_banco("restablecer a borrador")
         res = super().action_draft()
         for rec in self:
             if rec.is_hsbc_journal and rec.h2h_state not in ("draft", "method_selected"):

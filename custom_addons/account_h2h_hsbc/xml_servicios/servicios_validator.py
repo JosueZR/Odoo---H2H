@@ -20,6 +20,11 @@ from .constants import (
     CUENTA_B2B_LENGTH, CUENTA_CLABE_LENGTH, CURRENCY, XML_NAMESPACE,
 )
 
+def _nodo_o(nodo, alterno):
+    """Devuelve `nodo` si existe y si no `alterno` (sin evaluar la verdad de un Element)."""
+    return nodo if nodo is not None else alterno
+
+
 
 def validar_cuenta_servicios(cuenta: str) -> tuple:
     """
@@ -196,8 +201,8 @@ def validar_xml_servicios(xml_bytes: bytes) -> None:
     cdtr_acct = find_node(cdt, "CdtrAcct")
     if cdtr_acct is None:
         raise UserError("Estructura Servicios inválida: Falta 'CdtTrfTxInf/CdtrAcct'.")
-    cdtr_acct_id = find_node(find_node(cdtr_acct, "Id") or cdtr_acct, "Othr")
-    cuenta_ben = get_val(cdtr_acct_id or cdtr_acct, "Id") if cdtr_acct_id is not None else ""
+    cdtr_acct_id = find_node(_nodo_o(find_node(cdtr_acct, "Id"), cdtr_acct), "Othr")
+    cuenta_ben = get_val(cdtr_acct_id, "Id") if cdtr_acct_id is not None else ""
     if not (cuenta_ben.isdigit() and len(cuenta_ben) in (10, 18)):
         raise UserError(
             f"Estructura Servicios inválida: La cuenta beneficiaria en CdtrAcct debe tener 10 dígitos (B2B HSBC) "

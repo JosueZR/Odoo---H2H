@@ -284,16 +284,17 @@
                         </field>
                     </div>
 
-                    <!-- ── Datos complementarios requeridos para SPID (USD) ── -->
+                    <!-- ── Datos complementarios requeridos para SPID (USD) ──
+                         Sin required en la vista: si fueran obligatorios, Odoo no deja guardar
+                         el formulario y el pago se queda atorado en el método. Los validadores
+                         de cada generador los exigen al presionar "Generar XML HSBC". -->
                     <group string="Datos requeridos para SPID (USD)"
                            invisible="h2h_method_code != 'SPID'">
                         <field name="h2h_spid_codigo"
-                               readonly="h2h_state not in ('draft', 'method_selected')"
-                               required="h2h_method_code == 'SPID'"/>
+                               readonly="h2h_state not in ('draft', 'method_selected')"/>
                         <field name="h2h_spid_rfc"
-                               placeholder="Ej. RFC del beneficiario"
-                               readonly="h2h_state not in ('draft', 'method_selected')"
-                               required="h2h_method_code == 'SPID'"/>
+                               placeholder="Si se deja vacío se usa el RFC del proveedor"
+                               readonly="h2h_state not in ('draft', 'method_selected')"/>
                         <field name="h2h_spid_referencia_larga"
                                placeholder="Referencia al beneficiario (máximo 40 caracteres)"
                                readonly="h2h_state not in ('draft', 'method_selected')"/>
@@ -305,13 +306,11 @@
                         <group>
                             <field name="h2h_opi_chrgbr" readonly="1" force_save="1"/>
                             <field name="h2h_opi_purp_code"
-                                   readonly="h2h_state not in ('draft', 'method_selected')"
-                                   required="h2h_method_code == 'OPI'"/>
+                                   readonly="h2h_state not in ('draft', 'method_selected')"/>
                         </group>
                         <group>
                             <field name="h2h_opi_reg_code"
-                                   readonly="h2h_state not in ('draft', 'method_selected')"
-                                   required="h2h_method_code == 'OPI'"/>
+                                   readonly="h2h_state not in ('draft', 'method_selected')"/>
                             <field name="h2h_opi_referencia_larga"
                                    placeholder="Ej. Invoice 1234 (máximo 140 caracteres)"
                                    readonly="h2h_state not in ('draft', 'method_selected')"/>
@@ -324,6 +323,12 @@
                     </group>
 
                 </div>
+            </xpath>
+
+            <!-- ── 3b. Pagos a proveedores: siempre son salientes (Enviar). Se oculta el
+                 selector Enviar/Recibir para no crear cobros por error. ── -->
+            <xpath expr="//field[@name='payment_type'][@widget='radio']" position="attributes">
+                <attribute name="invisible">partner_type == 'supplier'</attribute>
             </xpath>
 
             <!-- ── 4. Adaptar visibilidad de Proveedor (Vendor) en modo Nómina ── -->

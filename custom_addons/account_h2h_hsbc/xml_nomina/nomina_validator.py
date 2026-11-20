@@ -18,6 +18,11 @@ from .constants import (
     CURRENCY, XML_NAMESPACE, SVC_LVL_CODE, CTGY_PURP_CODE,
 )
 
+def _nodo_o(nodo, alterno):
+    """Devuelve `nodo` si existe y si no `alterno` (sin evaluar la verdad de un Element)."""
+    return nodo if nodo is not None else alterno
+
+
 
 def validar_cuenta_nomina_hsbc(cuenta: str) -> bool:
     """
@@ -229,8 +234,8 @@ def validar_xml_nomina(xml_bytes: bytes) -> None:
     dbtr_acct = find_node(pmt_inf, "DbtrAcct")
     if dbtr_acct is None:
         raise UserError("Estructura Nomina invalida: Falta 'PmtInf/DbtrAcct'.")
-    dbtr_acct_id = find_node(find_node(dbtr_acct, "Id") or dbtr_acct, "Othr")
-    cuenta_ord = get_val(dbtr_acct_id or dbtr_acct, "Id") if dbtr_acct_id is not None else ""
+    dbtr_acct_id = find_node(_nodo_o(find_node(dbtr_acct, "Id"), dbtr_acct), "Othr")
+    cuenta_ord = get_val(dbtr_acct_id, "Id") if dbtr_acct_id is not None else ""
     if len(cuenta_ord) != 10 or not cuenta_ord.isdigit():
         raise UserError(
             f"Estructura Nomina invalida: La cuenta ordenante en DbtrAcct debe tener 10 digitos. "
@@ -278,8 +283,8 @@ def validar_xml_nomina(xml_bytes: bytes) -> None:
 
         # CdtrAgt / ClrSysMmbId / MmbId = "021"
         cdtr_agt = find_node(cdt, "CdtrAgt")
-        clr_sys = find_node(find_node(cdtr_agt or cdt, "FinInstnId") or cdt, "ClrSysMmbId")
-        banco_ben = get_val(clr_sys or cdt, "MmbId") if clr_sys is not None else ""
+        clr_sys = find_node(_nodo_o(find_node(_nodo_o(cdtr_agt, cdt), "FinInstnId"), cdt), "ClrSysMmbId")
+        banco_ben = get_val(clr_sys, "MmbId") if clr_sys is not None else ""
         if banco_ben != "021":
             raise UserError(
                 f"Estructura Nomina invalida en transaccion #{idx}: El banco beneficiario en ClrSysMmbId debe ser '021' (HSBC). "
@@ -290,8 +295,8 @@ def validar_xml_nomina(xml_bytes: bytes) -> None:
         cdtr_acct = find_node(cdt, "CdtrAcct")
         if cdtr_acct is None:
             raise UserError(f"Estructura Nomina invalida: Falta 'CdtrAcct' en transaccion #{idx}.")
-        cdtr_acct_id = find_node(find_node(cdtr_acct, "Id") or cdtr_acct, "Othr")
-        cuenta_ben = get_val(cdtr_acct_id or cdtr_acct, "Id") if cdtr_acct_id is not None else ""
+        cdtr_acct_id = find_node(_nodo_o(find_node(cdtr_acct, "Id"), cdtr_acct), "Othr")
+        cuenta_ben = get_val(cdtr_acct_id, "Id") if cdtr_acct_id is not None else ""
         if len(cuenta_ben) != 10 or not cuenta_ben.isdigit():
             raise UserError(
                 f"Estructura Nomina invalida en transaccion #{idx}: La cuenta beneficiaria en CdtrAcct debe tener 10 digitos (cuenta HSBC). "

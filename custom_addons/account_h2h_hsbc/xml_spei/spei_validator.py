@@ -12,6 +12,11 @@ except ImportError:
 
 from .constants import CLABE_LENGTH, CURRENCY, XML_NAMESPACE
 
+def _nodo_o(nodo, alterno):
+    """Devuelve `nodo` si existe y si no `alterno` (sin evaluar la verdad de un Element)."""
+    return nodo if nodo is not None else alterno
+
+
 
 def validar_clabe(clabe: str) -> bool:
     """
@@ -145,8 +150,8 @@ def validar_xml_spei(xml_bytes: bytes) -> None:
     initg = find_node(grp, "InitgPty")
     if initg is None:
         raise UserError("Estructura SPEI inválida: Falta 'GrpHdr/InitgPty'.")
-    org_id_node = find_node(find_node(find_node(initg, "Id") or initg, "OrgId") or initg, "Othr")
-    client_id = get_val(org_id_node or initg, "Id") if org_id_node is not None else ""
+    org_id_node = find_node(_nodo_o(find_node(_nodo_o(find_node(initg, "Id"), initg), "OrgId"), initg), "Othr")
+    client_id = get_val(org_id_node, "Id") if org_id_node is not None else ""
     if not client_id:
         raise UserError("Estructura SPEI inválida: Falta el ID de cliente HSBC en 'InitgPty/Id/OrgId/Othr/Id'.")
 
@@ -199,8 +204,8 @@ def validar_xml_spei(xml_bytes: bytes) -> None:
     cdtr_acct = find_node(cdt, "CdtrAcct")
     if cdtr_acct is None:
         raise UserError("Estructura SPEI inválida: Falta 'CdtTrfTxInf/CdtrAcct'.")
-    cdtr_acct_id = find_node(find_node(cdtr_acct, "Id") or cdtr_acct, "Othr")
-    cuenta_ben = get_val(cdtr_acct_id or cdtr_acct, "Id") if cdtr_acct_id is not None else ""
+    cdtr_acct_id = find_node(_nodo_o(find_node(cdtr_acct, "Id"), cdtr_acct), "Othr")
+    cuenta_ben = get_val(cdtr_acct_id, "Id") if cdtr_acct_id is not None else ""
     if not cuenta_ben or len(cuenta_ben) != 18 or not cuenta_ben.isdigit():
         raise UserError(
             f"Estructura SPEI inválida: La cuenta beneficiaria en CdtrAcct debe tener 18 dígitos (CLABE). "
